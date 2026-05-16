@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Firebase credentials — NEVER commit these
+*firebase-adminsdk*.json
+*service-account*.json
+*serviceAccount*.json
+serviceAccountKey.json
+credentials*.json
+*-credentials.json

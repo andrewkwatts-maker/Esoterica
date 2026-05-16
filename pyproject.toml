@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "esoterica"
+version = "1.0.0a0"
+description = "Conspiracy theories, hidden histories, and suppressed knowledge"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Andrew Watts", email = "andrewkwatts@gmail.com"},
+]
+keywords = ["conspiracy", "history", "secret societies", "hidden knowledge", "alternative history"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Database",
+    "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+]
+
+dependencies = [
+    "eyecore>=0.1.0",
+]
+
+[project.optional-dependencies]
+bake = [
+    "requests>=2.28",
+]
+scrape = [
+    "feedparser>=6.0",
+    "requests>=2.28",
+    "beautifulsoup4>=4.12",
+    "praw>=7.0",
+]
+test = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/EyesOfAzrael/esoterica"
+Repository = "https://github.com/EyesOfAzrael/esoterica"
+Issues = "https://github.com/EyesOfAzrael/esoterica/issues"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/esoterica"]
+artifacts = ["src/esoterica/_data/*.db.gz"]
