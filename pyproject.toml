@@ -28,7 +28,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "eyecore>=0.1.0",
+    "eyecore>=1.0.0",
 ]
 
 [project.optional-dependencies]
