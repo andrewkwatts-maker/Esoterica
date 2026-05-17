@@ -5,16 +5,16 @@ build-backend = "maturin"
 [project]
 name = "esoterica"
 version = "1.0.0"
-description = "Conspiracy theories, hidden histories, and suppressed knowledge"
+description = "Magic systems, spells, rituals, arcane traditions, and esoteric knowledge"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
 authors = [
     {name = "Andrew Watts", email = "andrewkwatts@gmail.com"},
 ]
-keywords = ["conspiracy", "history", "secret societies", "hidden knowledge", "alternative history"]
+keywords = ["magic", "spells", "rituals", "arcane", "esoteric", "occult", "traditions"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
@@ -24,7 +24,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Topic :: Database",
-    "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
 ]
 
 dependencies = [
@@ -47,9 +46,9 @@ test = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/EyesOfAzrael/esoterica"
-Repository = "https://github.com/EyesOfAzrael/esoterica"
-Issues = "https://github.com/EyesOfAzrael/esoterica/issues"
+Homepage = "https://github.com/andrewkwatts-maker/Esoterica"
+Repository = "https://github.com/andrewkwatts-maker/Esoterica"
+Issues = "https://github.com/andrewkwatts-maker/Esoterica/issues"
 
 [tool.maturin]
 python-source = "src"
