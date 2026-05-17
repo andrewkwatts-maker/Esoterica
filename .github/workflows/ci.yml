@@ -20,7 +20,7 @@ jobs:
         run: |
           pip install maturin
           maturin build --out dist
-          pip install --no-index --find-links dist esoterica
+          pip install --find-links dist esoterica
       - name: Run tests
         run: pip install pytest && pytest tests/ -q
 
