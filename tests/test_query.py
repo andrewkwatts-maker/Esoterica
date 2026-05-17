@@ -4,7 +4,7 @@ import esoterica
 from esoterica._query import (
     Get,
     Search,
-    ByMythology,
+    ByTradition,
     ByCategory,
     ByType,
     Count,
@@ -21,23 +21,23 @@ from esoterica._query import (
 
 def test_get_exact(patch_base):
     """Get with exact name returns the matching entity."""
-    result = Get("Illuminati")
+    result = Get("Hermeticism")
     assert result is not None
-    assert result["name"] == "Illuminati"
+    assert result["name"] == "Hermeticism"
 
 
 def test_get_fuzzy(patch_base):
     """Get with lowercase name still finds the entity (case-insensitive)."""
-    result = Get("illuminati")
+    result = Get("hermeticism")
     assert result is not None
-    assert result["name"] == "Illuminati"
+    assert result["name"] == "Hermeticism"
 
 
 def test_get_partial(patch_base):
     """Get with a substring matches via the LIKE fallback."""
-    result = Get("lluminati")
+    result = Get("ermeticism")
     assert result is not None
-    assert result["name"] == "Illuminati"
+    assert result["name"] == "Hermeticism"
 
 
 def test_get_none(patch_base):
@@ -52,11 +52,11 @@ def test_get_none(patch_base):
 
 def test_search(patch_base):
     """Search returns at least one result for a known entity name."""
-    results = Search("Illuminati")
+    results = Search("Hermeticism")
     assert isinstance(results, list)
     assert len(results) >= 1
     names = [r["name"] for r in results]
-    assert "Illuminati" in names
+    assert "Hermeticism" in names
 
 
 def test_search_returns_list_on_no_match(patch_base):
@@ -66,31 +66,31 @@ def test_search_returns_list_on_no_match(patch_base):
 
 
 # ---------------------------------------------------------------------------
-# ByCategory (alias for ByMythology, using the mythology column as category)
+# ByTradition / ByCategory alias
 # ---------------------------------------------------------------------------
 
-def test_by_category(patch_base):
-    """ByCategory('western') returns the Illuminati entry."""
-    results = ByCategory("western")
+def test_by_tradition(patch_base):
+    """ByTradition('western-esoteric') returns the Hermeticism entry."""
+    results = ByTradition("western-esoteric")
     assert len(results) >= 1
     for r in results:
-        assert r["mythology"] == "western"
+        assert r["mythology"] == "western-esoteric"
 
 
-def test_by_category_case_insensitive(patch_base):
-    """ByCategory is case-insensitive."""
-    results = ByCategory("WESTERN")
+def test_by_tradition_case_insensitive(patch_base):
+    """ByTradition is case-insensitive."""
+    results = ByTradition("WESTERN-ESOTERIC")
     assert len(results) >= 1
 
 
-def test_by_mythology_alias(patch_base):
-    """ByMythology is an alias for ByCategory; both return the same results."""
-    assert ByMythology("western") == ByCategory("western")
+def test_by_category_alias(patch_base):
+    """ByCategory is an alias for ByTradition; both return the same results."""
+    assert ByTradition("ceremonial-magic") == ByCategory("ceremonial-magic")
 
 
-def test_by_category_no_results(patch_base):
-    """ByCategory with unknown value returns empty list."""
-    results = ByCategory("ancient-sumerian")
+def test_by_tradition_no_results(patch_base):
+    """ByTradition with unknown value returns empty list."""
+    results = ByTradition("ancient-sumerian")
     assert results == []
 
 
@@ -98,30 +98,30 @@ def test_by_category_no_results(patch_base):
 # ByType
 # ---------------------------------------------------------------------------
 
-def test_by_type_organization(patch_base):
-    """ByType('organization') returns the Illuminati."""
-    results = ByType("organization")
+def test_by_type_tradition(patch_base):
+    """ByType('tradition') returns Hermeticism."""
+    results = ByType("tradition")
     assert len(results) == 1
-    assert results[0]["name"] == "Illuminati"
+    assert results[0]["name"] == "Hermeticism"
 
 
-def test_by_type_theory(patch_base):
-    """ByType('theory') returns the New World Order."""
-    results = ByType("theory")
+def test_by_type_spell(patch_base):
+    """ByType('spell') returns Fireball."""
+    results = ByType("spell")
     assert len(results) == 1
-    assert results[0]["name"] == "New World Order"
+    assert results[0]["name"] == "Fireball"
 
 
 def test_by_type_filtered(patch_base):
-    """ByType('figure', 'financial') returns only George Soros."""
-    results = ByType("figure", "financial")
+    """ByType('grimoire', 'ceremonial-magic') returns only The Key of Solomon."""
+    results = ByType("grimoire", "ceremonial-magic")
     assert len(results) == 1
-    assert results[0]["name"] == "George Soros"
+    assert results[0]["name"] == "The Key of Solomon"
 
 
 def test_by_type_no_results(patch_base):
     """ByType with an absent type returns empty list."""
-    results = ByType("myth")
+    results = ByType("artifact")
     assert results == []
 
 
@@ -135,13 +135,13 @@ def test_count_all(patch_base):
 
 
 def test_count_typed(patch_base):
-    """Count('organization') returns 1 (Illuminati only)."""
-    assert Count("organization") == 1
+    """Count('tradition') returns 1 (Hermeticism only)."""
+    assert Count("tradition") == 1
 
 
 def test_count_zero_for_missing_type(patch_base):
     """Count with an absent type returns 0."""
-    assert Count("myth") == 0
+    assert Count("artifact") == 0
 
 
 # ---------------------------------------------------------------------------
@@ -157,30 +157,30 @@ def test_getrandom(patch_base):
 
 
 def test_getrandom_typed(patch_base):
-    """GetRandom('theory') returns an entity whose type is 'theory'."""
-    result = GetRandom("theory")
+    """GetRandom('spell') returns an entity whose type is 'spell'."""
+    result = GetRandom("spell")
     assert result is not None
-    assert result["type"] == "theory"
+    assert result["type"] == "spell"
 
 
 def test_getrandom_mythology(patch_base):
-    """GetRandom(mythology='financial') returns a financial entity."""
-    result = GetRandom(mythology="financial")
+    """GetRandom(mythology='thelema') returns a thelema entity."""
+    result = GetRandom(mythology="thelema")
     assert result is not None
-    assert result["mythology"] == "financial"
+    assert result["mythology"] == "thelema"
 
 
 def test_getrandom_typed_and_mythology(patch_base):
     """GetRandom with both type and mythology filters correctly."""
-    result = GetRandom("figure", "financial")
+    result = GetRandom("grimoire", "ceremonial-magic")
     assert result is not None
-    assert result["type"] == "figure"
-    assert result["mythology"] == "financial"
+    assert result["type"] == "grimoire"
+    assert result["mythology"] == "ceremonial-magic"
 
 
 def test_getrandom_no_match_returns_none(patch_base):
     """GetRandom for a type with no entities returns None."""
-    result = GetRandom("myth")
+    result = GetRandom("artifact")
     assert result is None
 
 
@@ -189,19 +189,19 @@ def test_getrandom_no_match_returns_none(patch_base):
 # ---------------------------------------------------------------------------
 
 def test_getfuzzy(patch_base):
-    """GetFuzzy('MK') finds MK-Ultra via the LIKE fallback."""
-    results = GetFuzzy("MK")
+    """GetFuzzy('Banish') finds Lesser Banishing Ritual via the LIKE fallback."""
+    results = GetFuzzy("Banish")
     assert isinstance(results, list)
     assert len(results) >= 1
     names = [r["name"] for r in results]
-    assert "MK-Ultra" in names
+    assert "Lesser Banishing Ritual" in names
 
 
 def test_getfuzzy_case_insensitive(patch_base):
     """GetFuzzy is case-insensitive."""
-    results = GetFuzzy("mk")
+    results = GetFuzzy("banish")
     names = [r["name"] for r in results]
-    assert "MK-Ultra" in names
+    assert "Lesser Banishing Ritual" in names
 
 
 def test_getfuzzy_no_match(patch_base):
@@ -215,7 +215,7 @@ def test_getfuzzy_no_match(patch_base):
 # ---------------------------------------------------------------------------
 
 def test_getmost_mythology(patch_base):
-    """GetMost('mythology') returns a list including at least one category."""
+    """GetMost('mythology') returns a list including at least one tradition."""
     results = GetMost("mythology")
     assert isinstance(results, list)
     assert len(results) >= 1
@@ -230,7 +230,7 @@ def test_getmost_type(patch_base):
     assert isinstance(results, list)
     assert len(results) >= 1
     keys = {r["type"] for r in results}
-    assert "organization" in keys or "theory" in keys or "event" in keys
+    assert "spell" in keys or "ritual" in keys or "tradition" in keys
 
 
 def test_getmost_count_field(patch_base):
@@ -260,29 +260,29 @@ def test_getall(patch_base):
 
 
 def test_getall_filtered_type(patch_base):
-    """GetAll('document') returns the single document entity."""
-    results = GetAll("document")
+    """GetAll('grimoire') returns the single grimoire entity."""
+    results = GetAll("grimoire")
     assert len(results) == 1
-    assert results[0]["name"] == "Protocols of Zion"
+    assert results[0]["name"] == "The Key of Solomon"
 
 
 def test_getall_filtered_mythology(patch_base):
-    """GetAll(mythology='government') returns only MK-Ultra."""
-    results = GetAll(mythology="government")
+    """GetAll(mythology='thelema') returns only Aleister Crowley."""
+    results = GetAll(mythology="thelema")
     assert len(results) == 1
-    assert results[0]["name"] == "MK-Ultra"
+    assert results[0]["name"] == "Aleister Crowley"
 
 
 def test_getall_filtered_type_and_mythology(patch_base):
-    """GetAll('figure', 'financial') returns only George Soros."""
-    results = GetAll("figure", "financial")
+    """GetAll('grimoire', 'ceremonial-magic') returns only The Key of Solomon."""
+    results = GetAll("grimoire", "ceremonial-magic")
     assert len(results) == 1
-    assert results[0]["name"] == "George Soros"
+    assert results[0]["name"] == "The Key of Solomon"
 
 
 def test_getall_no_match(patch_base):
     """GetAll with non-existent type returns empty list."""
-    results = GetAll("myth")
+    results = GetAll("artifact")
     assert results == []
 
 
@@ -290,58 +290,56 @@ def test_getall_no_match(patch_base):
 # Typed helpers defined in esoterica.__init__
 # ---------------------------------------------------------------------------
 
-def test_gettheory(patch_base):
-    """esoterica.GetTheory('New World Order') returns the NWO entity."""
-    result = esoterica.GetTheory("New World Order")
+def test_getspell(patch_base):
+    """esoterica.GetSpell('Fireball') returns the Fireball entity."""
+    result = esoterica.GetSpell("Fireball")
     assert result is not None
-    assert result["name"] == "New World Order"
-    assert result["type"] == "theory"
+    assert result["name"] == "Fireball"
+    assert result["type"] == "spell"
 
 
-def test_getevent(patch_base):
-    """esoterica.GetEvent('MK-Ultra') returns the MK-Ultra entity."""
-    result = esoterica.GetEvent("MK-Ultra")
+def test_getritual(patch_base):
+    """esoterica.GetRitual('Lesser Banishing Ritual') returns the LBRP entity."""
+    result = esoterica.GetRitual("Lesser Banishing Ritual")
     assert result is not None
-    assert result["name"] == "MK-Ultra"
-    assert result["type"] == "event"
+    assert result["name"] == "Lesser Banishing Ritual"
+    assert result["type"] == "ritual"
 
 
-def test_getfigure(patch_base):
-    """esoterica.GetFigure('George Soros') returns the Soros entity."""
-    result = esoterica.GetFigure("George Soros")
+def test_gettradition(patch_base):
+    """esoterica.GetTradition('Hermeticism') returns the Hermeticism entity."""
+    result = esoterica.GetTradition("Hermeticism")
     assert result is not None
-    assert result["name"] == "George Soros"
-    assert result["type"] == "figure"
+    assert result["name"] == "Hermeticism"
+    assert result["type"] == "tradition"
 
 
-def test_getorganization(patch_base):
-    """esoterica.GetOrganization('Illuminati') returns the Illuminati entity."""
-    result = esoterica.GetOrganization("Illuminati")
+def test_getgrimoire(patch_base):
+    """esoterica.GetGrimoire('Solomon') finds The Key of Solomon via LIKE."""
+    result = esoterica.GetGrimoire("Solomon")
     assert result is not None
-    assert result["name"] == "Illuminati"
-    assert result["type"] == "organization"
+    assert result["type"] == "grimoire"
 
 
-def test_getdocument(patch_base):
-    """esoterica.GetDocument('Protocols') finds Protocols of Zion via LIKE."""
-    result = esoterica.GetDocument("Protocols")
+def test_getpractitioner(patch_base):
+    """esoterica.GetPractitioner('Crowley') returns the Aleister Crowley entity."""
+    result = esoterica.GetPractitioner("Crowley")
     assert result is not None
-    assert result["type"] == "document"
+    assert result["type"] == "practitioner"
 
 
 def test_typed_helper_wrong_type_returns_none(patch_base):
-    """GetTheory with an organization name returns None (type mismatch)."""
-    result = esoterica.GetTheory("Illuminati")
+    """GetSpell with a tradition name returns None (type mismatch)."""
+    result = esoterica.GetSpell("Hermeticism")
     assert result is None
 
 
 def test_typed_helper_domain_fallback(patch_base):
-    """_typed falls back to domains_text LIKE; 'control' is in multiple domains."""
-    result = esoterica.GetOrganization("control")
-    # Illuminati has 'control' in domains and is type 'organization'
+    """_typed falls back to domains_text LIKE; 'conjuration' is in Key of Solomon domains."""
+    result = esoterica.GetGrimoire("conjuration")
     assert result is not None
-    assert result["type"] == "organization"
-    assert result["name"] == "Illuminati"
+    assert result["type"] == "grimoire"
+    assert result["name"] == "The Key of Solomon"
 
 
 # ---------------------------------------------------------------------------

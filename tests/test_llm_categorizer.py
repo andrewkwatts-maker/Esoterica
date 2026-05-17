@@ -4,37 +4,37 @@ from unittest.mock import patch, MagicMock
 from esoterica._llm_categorizer import (
     categorize_article,
     categorize_batch,
-    CONSPIRACY_CATEGORIES,
+    MAGIC_CATEGORIES,
 )
 
 
 # ---------------------------------------------------------------------------
-# CONSPIRACY_CATEGORIES list
+# MAGIC_CATEGORIES list
 # ---------------------------------------------------------------------------
 
 def test_categories_list_not_empty():
-    """CONSPIRACY_CATEGORIES should have at least 10 entries."""
-    assert len(CONSPIRACY_CATEGORIES) >= 10
+    """MAGIC_CATEGORIES should have at least 10 entries."""
+    assert len(MAGIC_CATEGORIES) >= 10
 
 
 def test_categories_contains_expected_values():
-    """Key conspiracy category strings are present."""
-    assert "government-surveillance" in CONSPIRACY_CATEGORIES
-    assert "secret-societies" in CONSPIRACY_CATEGORIES
-    assert "mind-control" in CONSPIRACY_CATEGORIES
-    assert "new-world-order" in CONSPIRACY_CATEGORIES
+    """Key magic category strings are present."""
+    assert "witchcraft" in MAGIC_CATEGORIES
+    assert "hermeticism" in MAGIC_CATEGORIES
+    assert "alchemy" in MAGIC_CATEGORIES
+    assert "ceremonial-magic" in MAGIC_CATEGORIES
 
 
 def test_categories_all_strings():
     """Every category is a non-empty string."""
-    for cat in CONSPIRACY_CATEGORIES:
+    for cat in MAGIC_CATEGORIES:
         assert isinstance(cat, str)
         assert cat.strip(), f"Empty category string found: {cat!r}"
 
 
 def test_categories_are_lowercase_hyphenated():
     """Categories follow the lowercase-hyphenated naming convention."""
-    for cat in CONSPIRACY_CATEGORIES:
+    for cat in MAGIC_CATEGORIES:
         assert cat == cat.lower(), f"Category not lowercase: {cat!r}"
         assert " " not in cat, f"Category contains spaces: {cat!r}"
 
@@ -53,7 +53,6 @@ def test_categorize_article_no_llm():
         result = categorize_article(article)
 
         assert result == article
-        # LLM methods should not have been called
         instance.categorize.assert_not_called()
         instance.summarize.assert_not_called()
         instance.extract_topics.assert_not_called()
@@ -65,7 +64,7 @@ def test_categorize_article_no_llm_returns_same_object():
         instance = MockLLM.get.return_value
         instance.is_available.return_value = False
 
-        article = {"title": "NSA Spy Program", "summary": "Short text."}
+        article = {"title": "Banishing Ritual Guide", "summary": "Short text."}
         result = categorize_article(article)
         assert result is article
 
@@ -79,14 +78,14 @@ def test_categorize_article_with_llm_adds_category():
     with patch("esoterica._llm_categorizer.LLMClient") as MockLLM:
         instance = MockLLM.get.return_value
         instance.is_available.return_value = True
-        instance.categorize.return_value = "government-surveillance"
+        instance.categorize.return_value = "ceremonial-magic"
         instance.summarize.return_value = "A short LLM summary."
-        instance.extract_topics.return_value = ["cia", "surveillance", "nsa"]
+        instance.extract_topics.return_value = ["ritual", "banishment", "circle"]
 
-        article = {"title": "NSA Spying Program", "summary": "x" * 10}
+        article = {"title": "LBRP Guide", "summary": "x" * 10}
         result = categorize_article(article)
 
-        assert result["category"] == "government-surveillance"
+        assert result["category"] == "ceremonial-magic"
 
 
 def test_categorize_article_with_llm_adds_llm_topics():
@@ -94,15 +93,15 @@ def test_categorize_article_with_llm_adds_llm_topics():
     with patch("esoterica._llm_categorizer.LLMClient") as MockLLM:
         instance = MockLLM.get.return_value
         instance.is_available.return_value = True
-        instance.categorize.return_value = "government-surveillance"
+        instance.categorize.return_value = "witchcraft"
         instance.summarize.return_value = "A short LLM summary."
-        instance.extract_topics.return_value = ["cia", "surveillance"]
+        instance.extract_topics.return_value = ["herbs", "moon", "spells"]
 
-        article = {"title": "NSA Spying Program", "summary": "x" * 10}
+        article = {"title": "Lunar Spells", "summary": "x" * 10}
         result = categorize_article(article)
 
         assert "llm_topics" in result
-        assert result["llm_topics"] == ["cia", "surveillance"]
+        assert result["llm_topics"] == ["herbs", "moon", "spells"]
 
 
 def test_categorize_article_with_llm_short_summary_gets_replaced():
@@ -110,7 +109,7 @@ def test_categorize_article_with_llm_short_summary_gets_replaced():
     with patch("esoterica._llm_categorizer.LLMClient") as MockLLM:
         instance = MockLLM.get.return_value
         instance.is_available.return_value = True
-        instance.categorize.return_value = "false-flag"
+        instance.categorize.return_value = "alchemy"
         instance.summarize.return_value = "A proper long summary generated by LLM."
         instance.extract_topics.return_value = []
 
@@ -126,11 +125,11 @@ def test_categorize_article_with_llm_long_summary_not_replaced():
     with patch("esoterica._llm_categorizer.LLMClient") as MockLLM:
         instance = MockLLM.get.return_value
         instance.is_available.return_value = True
-        instance.categorize.return_value = "financial-manipulation"
+        instance.categorize.return_value = "hermeticism"
         instance.extract_topics.return_value = []
 
         long_summary = "This summary is definitely longer than fifty characters total."
-        article = {"title": "Long Summary Article", "summary": long_summary}
+        article = {"title": "Hermetic Philosophy", "summary": long_summary}
         result = categorize_article(article)
 
         instance.summarize.assert_not_called()
@@ -142,16 +141,15 @@ def test_categorize_article_uses_content_when_no_summary():
     with patch("esoterica._llm_categorizer.LLMClient") as MockLLM:
         instance = MockLLM.get.return_value
         instance.is_available.return_value = True
-        instance.categorize.return_value = "extraterrestrial"
+        instance.categorize.return_value = "divination"
         instance.summarize.return_value = "Generated summary."
-        instance.extract_topics.return_value = ["ufo", "aliens"]
+        instance.extract_topics.return_value = ["tarot", "oracle"]
 
-        article = {"title": "UFO Crash", "content": "Eyewitnesses reported a craft."}
+        article = {"title": "Tarot Reading", "content": "Eyewitnesses reported a craft."}
         result = categorize_article(article)
 
-        # categorize should have been called with the constructed text
         instance.categorize.assert_called_once()
-        assert result["category"] == "extraterrestrial"
+        assert result["category"] == "divination"
 
 
 # ---------------------------------------------------------------------------
@@ -198,14 +196,14 @@ def test_categorize_batch_with_llm():
     with patch("esoterica._llm_categorizer.LLMClient") as MockLLM:
         instance = MockLLM.get.return_value
         instance.is_available.return_value = True
-        instance.categorize.return_value = "secret-societies"
+        instance.categorize.return_value = "witchcraft"
         instance.summarize.return_value = "LLM summary text here for the article."
-        instance.extract_topics.return_value = ["freemasonry", "rituals"]
+        instance.extract_topics.return_value = ["moon", "herbs"]
 
-        articles = [{"title": f"Secret Society {i}", "summary": "Short."} for i in range(2)]
+        articles = [{"title": f"Spell {i}", "summary": "Short."} for i in range(2)]
         result = categorize_batch(articles)
 
         assert len(result) == 2
         for r in result:
-            assert r["category"] == "secret-societies"
+            assert r["category"] == "witchcraft"
             assert "llm_topics" in r

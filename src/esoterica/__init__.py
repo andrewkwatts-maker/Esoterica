@@ -1,15 +1,15 @@
 """
-esoterica — Conspiracy theories, secret societies, and hidden histories.
+esoterica — Magic systems, spells, rituals, arcane traditions, and esoteric knowledge.
 
 Quick start:
     import esoterica
-    org     = esoterica.GetOrganization("Illuminati")
-    theory  = esoterica.GetTheory("New World Order")
-    event   = esoterica.GetEvent("MK-Ultra")
-    results = esoterica.Search("surveillance")
-    western = esoterica.ByCategory("western")
-    esoterica.FetchCorpus("gutenberg-1984")
-    hits    = esoterica.SearchCorpus("false flag")
+    spell     = esoterica.GetSpell("Fireball")
+    ritual    = esoterica.GetRitual("summoning")
+    tradition = esoterica.GetTradition("Hermeticism")
+    results   = esoterica.Search("banishment")
+    spells    = esoterica.ByTradition("ceremonial-magic")
+    esoterica.FetchCorpus("gutenberg-key-of-solomon")
+    hits      = esoterica.SearchCorpus("circle of protection")
 """
 from __future__ import annotations
 
@@ -42,9 +42,13 @@ except ImportError:
 from ._query import (
     Get,
     Search,
+    ByTradition,
     ByCategory,
     ByMythology,
     ByType,
+    AllSpells,
+    AllRituals,
+    AllTraditions,
     Count,
     GetRandom,
     GetFuzzy,
@@ -79,45 +83,61 @@ from ._llm_categorizer import (
 )
 
 
-def GetOrganization(query: str) -> dict | None:
-    """Return a secret society or organization by name."""
-    return _typed(query, "organization")
+def GetSpell(query: str) -> dict | None:
+    """Return a spell or incantation by name or effect."""
+    return _typed(query, "spell")
 
 
-def GetTheory(query: str) -> dict | None:
-    """Return a conspiracy theory by name."""
-    return _typed(query, "theory")
+def GetRitual(query: str) -> dict | None:
+    """Return a ritual or ceremony by name."""
+    return _typed(query, "ritual")
 
 
-def GetEvent(query: str) -> dict | None:
-    """Return a notable event or operation by name."""
-    return _typed(query, "event")
+def GetTradition(query: str) -> dict | None:
+    """Return a magical tradition or system by name."""
+    return _typed(query, "tradition")
 
 
-def GetFigure(query: str) -> dict | None:
-    """Return a notable figure by name."""
-    return _typed(query, "figure")
+def GetGrimoire(query: str) -> dict | None:
+    """Return a grimoire or magical text by name."""
+    return _typed(query, "grimoire")
 
 
-def GetDocument(query: str) -> dict | None:
-    """Return a document, manifesto, or text by name."""
-    return _typed(query, "document")
+def GetIngredient(query: str) -> dict | None:
+    """Return a magical ingredient or component by name."""
+    return _typed(query, "ingredient")
 
 
-__version__ = "1.0.0"
+def GetArtifact(query: str) -> dict | None:
+    """Return a magical artifact or object by name."""
+    return _typed(query, "artifact")
+
+
+def GetPractitioner(query: str) -> dict | None:
+    """Return a notable practitioner or mage by name."""
+    return _typed(query, "practitioner")
+
+
+__version__ = "1.0.1"
 
 __all__ = [
     # Core query
     "Get",
-    "GetOrganization",
-    "GetTheory",
-    "GetEvent",
-    "GetFigure",
-    "GetDocument",
+    "GetSpell",
+    "GetRitual",
+    "GetTradition",
+    "GetGrimoire",
+    "GetIngredient",
+    "GetArtifact",
+    "GetPractitioner",
     "Search",
+    "ByTradition",
     "ByCategory",
     "ByMythology",
     "ByType",
+    "AllSpells",
+    "AllRituals",
+    "AllTraditions",
     "Count",
     "GetRandom",
     "GetFuzzy",

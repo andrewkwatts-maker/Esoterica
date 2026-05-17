@@ -1,4 +1,4 @@
-"""Esoterica live content scraper — Reddit, forums, RSS feeds."""
+﻿"""Esoterica live content scraper — Reddit, forums, RSS feeds."""
 from __future__ import annotations
 
 import hashlib
@@ -16,24 +16,24 @@ from eyecore import cache_dir
 _SOURCES_FILE = cache_dir("esoterica") / "sources.json"
 
 DEFAULT_REDDIT_SUBS = [
-    "conspiracy",
-    "conspiracy_commons",
-    "conspiracytheories",
-    "Unexplained",
-    "UFOs",
-    "C_S_T",
-    "HighStrangeness",
-    "esoteric",
-    "SecretSocieties",
-    "DeepState",
+    "occult",
+    "witchcraft",
+    "Wicca",
+    "magick",
+    "chaos_magic",
+    "thelema",
+    "hermeticism",
+    "tarot",
+    "spells",
+    "paganism",
 ]
 
-DEFAULT_4CHAN_BOARDS = ["x", "pol"]
+DEFAULT_4CHAN_BOARDS = ["x"]
 
 DEFAULT_FEEDS = [
-    {"url": "https://www.infowars.com/rss.xml", "name": "InfoWars", "category": "conspiracy"},
-    {"url": "https://beforeitsnews.com/rss.html", "name": "Before It's News", "category": "conspiracy"},
-    {"url": "https://www.zerohedge.com/fullrss2.xml", "name": "ZeroHedge", "category": "financial-manipulation"},
+    {"url": "https://www.llewellyn.com/feed/rss/news", "name": "Llewellyn", "category": "witchcraft"},
+    {"url": "https://www.patheos.com/blogs/agora/feed/", "name": "Patheos Agora", "category": "paganism"},
+    {"url": "https://witchesandpagans.com/feed", "name": "Witches & Pagans", "category": "witchcraft"},
 ]
 
 

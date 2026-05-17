@@ -90,7 +90,7 @@ def Search(query: str, limit: int = 20) -> list[dict]:
         return _rows_data(rows)
 
 
-def ByCategory(mythology: str, limit: int = 500) -> list[dict]:
+def ByTradition(mythology: str, limit: int = 500) -> list[dict]:
     rows = _BASE.fetchall(
         "SELECT data FROM entities WHERE lower(mythology) = lower(?) LIMIT ?",
         (mythology, limit),
@@ -98,7 +98,8 @@ def ByCategory(mythology: str, limit: int = 500) -> list[dict]:
     return _rows_data(rows)
 
 
-ByMythology = ByCategory
+ByCategory = ByTradition
+ByMythology = ByTradition
 
 
 def ByType(entity_type: str, mythology: str | None = None, limit: int = 500) -> list[dict]:
@@ -113,6 +114,18 @@ def ByType(entity_type: str, mythology: str | None = None, limit: int = 500) -> 
             (entity_type, limit),
         )
     return _rows_data(rows)
+
+
+def AllSpells(mythology: str | None = None, limit: int = 500) -> list[dict]:
+    return ByType("spell", mythology, limit)
+
+
+def AllRituals(mythology: str | None = None, limit: int = 500) -> list[dict]:
+    return ByType("ritual", mythology, limit)
+
+
+def AllTraditions(limit: int = 500) -> list[dict]:
+    return ByType("tradition", limit=limit)
 
 
 def Count(entity_type: str | None = None) -> int:

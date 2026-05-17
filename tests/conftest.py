@@ -2,7 +2,7 @@
 
 Strategy: patch esoterica._query._BASE with a MagicMock whose fetchone/fetchall/execute
 side-effects delegate to a real in-memory SQLite connection containing the full schema
-and a small set of known conspiracy entities.
+and a small set of known magic entities.
 """
 import json
 import sqlite3
@@ -59,46 +59,46 @@ CREATE TABLE IF NOT EXISTS entity_topics (
 """
 
 # ---------------------------------------------------------------------------
-# Test fixture data  (mythology column stores the category/domain in apocrypha)
+# Test fixture data  (mythology column stores the magic tradition)
 # ---------------------------------------------------------------------------
 
-ILLUMINATI = {
-    "id": "illuminati",
-    "name": "Illuminati",
-    "type": "organization",
-    "mythology": "western",
-    "domains": "secret society control",
+HERMETICISM = {
+    "id": "hermeticism",
+    "name": "Hermeticism",
+    "type": "tradition",
+    "mythology": "western-esoteric",
+    "domains": "sacred geometry kabbalah alchemy thoth",
 }
-NWO = {
-    "id": "nwo",
-    "name": "New World Order",
-    "type": "theory",
-    "mythology": "geopolitical",
-    "domains": "global government control",
+FIREBALL = {
+    "id": "fireball",
+    "name": "Fireball",
+    "type": "spell",
+    "mythology": "elemental-magic",
+    "domains": "fire destruction evocation attack",
 }
-MKDELTA = {
-    "id": "mkdelta",
-    "name": "MK-Ultra",
-    "type": "event",
-    "mythology": "government",
-    "domains": "mind control cia experiment",
+LBRP = {
+    "id": "lbrp",
+    "name": "Lesser Banishing Ritual",
+    "type": "ritual",
+    "mythology": "ceremonial-magic",
+    "domains": "banishment protection purification circle",
 }
-SOROS = {
-    "id": "soros",
-    "name": "George Soros",
-    "type": "figure",
-    "mythology": "financial",
-    "domains": "finance globalism",
+CROWLEY = {
+    "id": "crowley",
+    "name": "Aleister Crowley",
+    "type": "practitioner",
+    "mythology": "thelema",
+    "domains": "ritual magic occult thelema golden dawn",
 }
-PROTOCOLS = {
-    "id": "protocols",
-    "name": "Protocols of Zion",
-    "type": "document",
-    "mythology": "antisemitic",
-    "domains": "forgery propaganda",
+KEY_OF_SOLOMON = {
+    "id": "key-of-solomon",
+    "name": "The Key of Solomon",
+    "type": "grimoire",
+    "mythology": "ceremonial-magic",
+    "domains": "demons spirits conjuration seals",
 }
 
-ALL_ENTITIES = [ILLUMINATI, NWO, MKDELTA, SOROS, PROTOCOLS]
+ALL_ENTITIES = [HERMETICISM, FIREBALL, LBRP, CROWLEY, KEY_OF_SOLOMON]
 
 
 # ---------------------------------------------------------------------------

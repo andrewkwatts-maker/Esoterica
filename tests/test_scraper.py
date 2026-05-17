@@ -37,7 +37,7 @@ def test_load_sources_default_reddit_subs():
         mock_file.exists.return_value = False
         sources = load_sources()
 
-    assert "conspiracy" in sources["reddit_subs"]
+    assert "occult" in sources["reddit_subs"]
 
 
 def test_load_sources_default_chan_boards():
