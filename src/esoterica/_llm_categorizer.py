@@ -1,26 +1,25 @@
-"""Use local LLM to categorize and enrich scraped esoteric / magic-systems content."""
+"""Use local LLM to categorize and enrich scraped conspiracy content."""
 from __future__ import annotations
 
 from eyecore import LLMClient
 
-MAGIC_CATEGORIES = [
-    "ceremonial-magic",
-    "folk-magic",
-    "witchcraft",
-    "hermeticism",
-    "kabbalah",
-    "alchemy",
-    "divination",
-    "shamanism",
-    "chaos-magic",
-    "druidry",
-    "astrology",
-    "demonology",
-    "angelic-magic",
-    "sigils-and-symbols",
-    "elemental-magic",
-    "necromancy",
-    "healing-magic",
+CONSPIRACY_CATEGORIES = [
+    "government-surveillance",
+    "secret-societies",
+    "mind-control",
+    "new-world-order",
+    "false-flag",
+    "extraterrestrial",
+    "financial-manipulation",
+    "media-control",
+    "deep-state",
+    "bioweapons",
+    "climate-conspiracy",
+    "religious-conspiracy",
+    "technology-control",
+    "assassination",
+    "election-fraud",
+    "historical-revisionism",
     "other",
 ]
 
@@ -34,7 +33,7 @@ def categorize_article(article: dict) -> dict:
         f"{article.get('title', '')}\n"
         f"{article.get('summary', article.get('content', ''))[:1000]}"
     )
-    article["category"] = llm.categorize(text, MAGIC_CATEGORIES)
+    article["category"] = llm.categorize(text, CONSPIRACY_CATEGORIES)
     if not article.get("summary") or len(article.get("summary", "")) < 50:
         article["summary"] = llm.summarize(text, max_words=150)
     article["llm_topics"] = llm.extract_topics(text)
@@ -52,7 +51,7 @@ def categorize_batch(articles: list[dict], verbose: bool = False) -> list[dict]:
 
 
 def generate_daily_report(articles: list[dict], date: str) -> str:
-    """Generate a daily esoterica digest from all articles for a given date."""
+    """Generate a daily conspiracy digest from all articles for a given date."""
     llm = LLMClient.get()
     if not llm.is_available():
         return f"LLM not available — {len(articles)} articles scraped on {date}"
@@ -66,7 +65,7 @@ def generate_daily_report(articles: list[dict], date: str) -> str:
         by_category.items(), key=lambda x: len(x[1]), reverse=True
     )[:5]
 
-    report_parts = [f"# Esoterica Digest — {date}\n"]
+    report_parts = [f"# Conspiracy Digest — {date}\n"]
     for cat, items in top_categories:
         section = llm.generate_report(
             items,

@@ -90,19 +90,22 @@ def Search(query: str, limit: int = 20) -> list[dict]:
         return _rows_data(rows)
 
 
-def ByTradition(tradition: str, limit: int = 500) -> list[dict]:
+def ByCategory(mythology: str, limit: int = 500) -> list[dict]:
     rows = _BASE.fetchall(
         "SELECT data FROM entities WHERE lower(mythology) = lower(?) LIMIT ?",
-        (tradition, limit),
+        (mythology, limit),
     )
     return _rows_data(rows)
 
 
-def ByType(entity_type: str, tradition: str | None = None, limit: int = 500) -> list[dict]:
-    if tradition:
+ByMythology = ByCategory
+
+
+def ByType(entity_type: str, mythology: str | None = None, limit: int = 500) -> list[dict]:
+    if mythology:
         rows = _BASE.fetchall(
             "SELECT data FROM entities WHERE type = ? AND lower(mythology) = lower(?) LIMIT ?",
-            (entity_type, tradition, limit),
+            (entity_type, mythology, limit),
         )
     else:
         rows = _BASE.fetchall(
@@ -110,18 +113,6 @@ def ByType(entity_type: str, tradition: str | None = None, limit: int = 500) -> 
             (entity_type, limit),
         )
     return _rows_data(rows)
-
-
-def AllSpells(tradition: str | None = None, limit: int = 500) -> list[dict]:
-    return ByType("spell", tradition, limit)
-
-
-def AllRituals(tradition: str | None = None, limit: int = 500) -> list[dict]:
-    return ByType("ritual", tradition, limit)
-
-
-def AllTraditions(limit: int = 500) -> list[dict]:
-    return ByType("tradition", limit=limit)
 
 
 def Count(entity_type: str | None = None) -> int:
@@ -132,21 +123,21 @@ def Count(entity_type: str | None = None) -> int:
     return _BASE.fetchone("SELECT COUNT(*) FROM entities")[0]
 
 
-def GetRandom(entity_type: str | None = None, tradition: str | None = None) -> dict | None:
-    if entity_type and tradition:
+def GetRandom(entity_type: str | None = None, mythology: str | None = None) -> dict | None:
+    if entity_type and mythology:
         row = _BASE.fetchone(
             "SELECT data FROM entities WHERE type=? AND lower(mythology)=lower(?) ORDER BY RANDOM() LIMIT 1",
-            (entity_type, tradition),
+            (entity_type, mythology),
         )
     elif entity_type:
         row = _BASE.fetchone(
             "SELECT data FROM entities WHERE type=? ORDER BY RANDOM() LIMIT 1",
             (entity_type,),
         )
-    elif tradition:
+    elif mythology:
         row = _BASE.fetchone(
             "SELECT data FROM entities WHERE lower(mythology)=lower(?) ORDER BY RANDOM() LIMIT 1",
-            (tradition,),
+            (mythology,),
         )
     else:
         row = _BASE.fetchone("SELECT data FROM entities ORDER BY RANDOM() LIMIT 1")
@@ -186,17 +177,17 @@ def GetMost(field: str = "mythology", limit: int = 10) -> list[dict]:
     return [dict(r) for r in rows]
 
 
-def GetAll(entity_type: str | None = None, tradition: str | None = None) -> list[dict]:
-    if entity_type and tradition:
+def GetAll(entity_type: str | None = None, mythology: str | None = None) -> list[dict]:
+    if entity_type and mythology:
         rows = _BASE.fetchall(
             "SELECT data FROM entities WHERE type=? AND lower(mythology)=lower(?)",
-            (entity_type, tradition),
+            (entity_type, mythology),
         )
     elif entity_type:
         rows = _BASE.fetchall("SELECT data FROM entities WHERE type=?", (entity_type,))
-    elif tradition:
+    elif mythology:
         rows = _BASE.fetchall(
-            "SELECT data FROM entities WHERE lower(mythology)=lower(?)", (tradition,)
+            "SELECT data FROM entities WHERE lower(mythology)=lower(?)", (mythology,)
         )
     else:
         rows = _BASE.fetchall("SELECT data FROM entities")
