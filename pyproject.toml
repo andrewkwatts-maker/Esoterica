@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["maturin>=1.4,<2.0"]
+build-backend = "maturin"
 
 [project]
 name = "esoterica"
@@ -51,9 +51,10 @@ Homepage = "https://github.com/EyesOfAzrael/esoterica"
 Repository = "https://github.com/EyesOfAzrael/esoterica"
 Issues = "https://github.com/EyesOfAzrael/esoterica/issues"
 
+[tool.maturin]
+python-source = "src"
+module-name = "esoterica._core"
+features = ["pyo3/extension-module"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/esoterica"]
-artifacts = ["src/esoterica/_data/*.db.gz"]

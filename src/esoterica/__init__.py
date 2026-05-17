@@ -9,6 +9,32 @@ Quick start:
 """
 from __future__ import annotations
 
+try:
+    from ._core import score_entity, tags_match
+    _RUST_CORE = True
+except ImportError:
+    _RUST_CORE = False
+
+    def score_entity(name: str, description: str, search_text: str, query: str) -> float:
+        q = query.lower()
+        n = name.lower()
+        if not q:
+            return 0.0
+        score = 0.0
+        if n.startswith(q):
+            score += 1000.0
+        elif q in n:
+            score += 500.0
+        if q in description.lower():
+            score += 150.0
+        if q in search_text.lower():
+            score += 120.0
+        return score
+
+    def tags_match(tags: list, query: str) -> bool:
+        q = query.lower()
+        return any(t.lower().startswith(q) or q in t.lower() for t in tags)
+
 from ._query import (
     Get,
     Search,
@@ -118,4 +144,5 @@ __all__ = [
     # LLM
     "Categorize",
     "DailyReport",
+    "_RUST_CORE",
 ]
