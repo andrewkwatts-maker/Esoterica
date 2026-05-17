@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bake conspiracy data into apocrypha.db (SQLite) via the Firestore REST API.
+"""Bake magic-systems data into esoterica.db (SQLite) via the Firestore REST API.
 
 Usage:
     python scripts/bake.py                          # pull from Firebase
@@ -18,7 +18,7 @@ from pathlib import Path
 try:
     import requests
 except ImportError:
-    sys.exit("Install bake deps: pip install 'apocrypha[bake]'")
+    sys.exit("Install bake deps: pip install 'esoterica[bake]'")
 
 try:
     from eyecore import compress_db, GRAPH_SCHEMA
@@ -26,21 +26,20 @@ except ImportError:
     sys.exit("eyecore not installed. Run: pip install eyecore")
 
 ROOT = Path(__file__).parent.parent
-DATA_OUT = ROOT / "src" / "apocrypha" / "_data" / "apocrypha.db"
+DATA_OUT = ROOT / "src" / "esoterica" / "_data" / "esoterica.db"
 
-PROJECT_ID = "eyesofazrael"
-# Public client API key — safe to embed, identical to what ships in the website JS
-DEFAULT_API_KEY = "AIzaSyB7bFdte6f81-bNMsdITgnnnWq7aBNMXRw"
+PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", "")
+DEFAULT_API_KEY = os.getenv("FIREBASE_API_KEY", "")
 _BASE = f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/(default)/documents"
 
 COLLECTIONS: dict[str, str] = {
-    "theories": "theory",
-    "events": "event",
-    "figures": "figure",
-    "organizations": "organization",
-    "concepts": "concept",
-    "documents": "document",
-    "locations": "location",
+    "spells": "spell",
+    "rituals": "ritual",
+    "traditions": "tradition",
+    "grimoires": "grimoire",
+    "ingredients": "ingredient",
+    "artifacts": "artifact",
+    "practitioners": "practitioner",
 }
 
 TYPE_FIXES: dict[str, str] = {}

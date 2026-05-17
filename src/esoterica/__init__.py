@@ -1,11 +1,15 @@
 """
-esoterica — Conspiracy theories, hidden histories, and suppressed knowledge.
+esoterica — Magic systems, spells, rituals, arcane traditions, and esoteric knowledge.
 
 Quick start:
     import esoterica
-    theory = esoterica.GetTheory("Illuminati")
-    results = esoterica.Search("shadow government")
-    orgs = esoterica.ByCategory("government")
+    spell     = esoterica.GetSpell("Fireball")
+    ritual    = esoterica.GetRitual("summoning")
+    tradition = esoterica.GetTradition("Hermeticism")
+    results   = esoterica.Search("banishment")
+    spells    = esoterica.ByTradition("Wicca")
+    esoterica.FetchCorpus("gutenberg-key-of-solomon")
+    hits      = esoterica.SearchCorpus("circle of protection")
 """
 from __future__ import annotations
 
@@ -38,8 +42,11 @@ except ImportError:
 from ._query import (
     Get,
     Search,
-    ByCategory,
+    ByTradition,
     ByType,
+    AllSpells,
+    AllRituals,
+    AllTraditions,
     Count,
     GetRandom,
     GetFuzzy,
@@ -74,34 +81,39 @@ from ._llm_categorizer import (
 )
 
 
-def GetTheory(query: str) -> dict | None:
-    """Return a conspiracy theory by name."""
-    return _typed(query, "theory")
+def GetSpell(query: str) -> dict | None:
+    """Return a spell or incantation by name or effect."""
+    return _typed(query, "spell")
 
 
-def GetEvent(query: str) -> dict | None:
-    """Return an event by name."""
-    return _typed(query, "event")
+def GetRitual(query: str) -> dict | None:
+    """Return a ritual or ceremony by name."""
+    return _typed(query, "ritual")
 
 
-def GetFigure(query: str) -> dict | None:
-    """Return a figure by name."""
-    return _typed(query, "figure")
+def GetTradition(query: str) -> dict | None:
+    """Return a magical tradition or system by name."""
+    return _typed(query, "tradition")
 
 
-def GetOrganization(query: str) -> dict | None:
-    """Return an organization by name."""
-    return _typed(query, "organization")
+def GetGrimoire(query: str) -> dict | None:
+    """Return a grimoire or magical text by name."""
+    return _typed(query, "grimoire")
 
 
-def GetConcept(query: str) -> dict | None:
-    """Return a concept by name."""
-    return _typed(query, "concept")
+def GetIngredient(query: str) -> dict | None:
+    """Return a magical ingredient or component by name."""
+    return _typed(query, "ingredient")
 
 
-def GetDocument(query: str) -> dict | None:
-    """Return a document by name."""
-    return _typed(query, "document")
+def GetArtifact(query: str) -> dict | None:
+    """Return a magical artifact or object by name."""
+    return _typed(query, "artifact")
+
+
+def GetPractitioner(query: str) -> dict | None:
+    """Return a notable practitioner or mage by name."""
+    return _typed(query, "practitioner")
 
 
 __version__ = "1.0.0"
@@ -109,15 +121,19 @@ __version__ = "1.0.0"
 __all__ = [
     # Core query
     "Get",
-    "GetTheory",
-    "GetEvent",
-    "GetFigure",
-    "GetOrganization",
-    "GetConcept",
-    "GetDocument",
+    "GetSpell",
+    "GetRitual",
+    "GetTradition",
+    "GetGrimoire",
+    "GetIngredient",
+    "GetArtifact",
+    "GetPractitioner",
     "Search",
-    "ByCategory",
+    "ByTradition",
     "ByType",
+    "AllSpells",
+    "AllRituals",
+    "AllTraditions",
     "Count",
     "GetRandom",
     "GetFuzzy",
@@ -131,17 +147,15 @@ __all__ = [
     "SearchCorpus",
     "FetchCorpus",
     "ListCorpuses",
-    # Scraper
+    # Live / user-contributed
     "AddFeed",
     "RemoveFeed",
     "Scrape",
     "ListSources",
     "AddSubreddit",
-    # Store
     "AvailableDays",
     "Compress",
     "DataDir",
-    # LLM
     "Categorize",
     "DailyReport",
     "_RUST_CORE",

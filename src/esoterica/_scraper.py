@@ -1,4 +1,4 @@
-"""Conspiracy content scraper — Reddit, 4chan, RSS feeds."""
+"""Esoterica live content scraper — Reddit, forums, RSS feeds."""
 from __future__ import annotations
 
 import hashlib
@@ -13,24 +13,27 @@ from urllib.parse import urlparse
 
 from eyecore import cache_dir
 
-_SOURCES_FILE = cache_dir("apocrypha") / "sources.json"
+_SOURCES_FILE = cache_dir("esoterica") / "sources.json"
 
 DEFAULT_REDDIT_SUBS = [
-    "conspiracy",
-    "conspiracytheories",
-    "conspiracy_commons",
-    "HighStrangeness",
-    "C_S_T",
-    "UFOs",
-    "aliens",
+    "occult",
+    "witchcraft",
+    "Wicca",
+    "magick",
+    "chaos_magic",
+    "thelema",
+    "hermeticism",
+    "tarot",
+    "spells",
+    "paganism",
 ]
 
-DEFAULT_4CHAN_BOARDS = ["x", "pol"]
+DEFAULT_4CHAN_BOARDS = ["x"]
 
 DEFAULT_FEEDS = [
-    {"url": "https://www.zerohedge.com/fullrss2.xml", "name": "ZeroHedge", "category": "finance"},
-    {"url": "https://www.infowars.com/rss.xml",        "name": "InfoWars",   "category": "politics"},
-    {"url": "https://www.whatdoesitmean.com/rss.xml",  "name": "Sorcha Faal", "category": "geopolitics"},
+    {"url": "https://www.llewellyn.com/feed/rss/news", "name": "Llewellyn", "category": "witchcraft"},
+    {"url": "https://www.patheos.com/blogs/agora/feed/", "name": "Patheos Agora", "category": "paganism"},
+    {"url": "https://witchesandpagans.com/feed", "name": "Witches & Pagans", "category": "witchcraft"},
 ]
 
 
@@ -121,7 +124,7 @@ def scrape_reddit(limit_per_sub: int = 25, verbose: bool = False) -> list[dict]:
         import praw
     except ImportError:
         print(
-            "PRAW not installed. Install with: pip install 'apocrypha[scrape]'"
+            "PRAW not installed. Install with: pip install 'esoterica[scrape]'"
         )
         return []
 
@@ -143,7 +146,7 @@ def scrape_reddit(limit_per_sub: int = 25, verbose: bool = False) -> list[dict]:
         reddit = praw.Reddit(
             client_id=client_id,
             client_secret=client_secret,
-            user_agent="apocrypha/0.1 (conspiracy-scraper; read-only)",
+            user_agent="esoterica/1.0 (conspiracy-scraper; read-only)",
             read_only=True,
         )
     except Exception as exc:
@@ -212,7 +215,7 @@ def scrape_4chan(limit_per_board: int = 20, verbose: bool = False) -> list[dict]
     try:
         import requests
     except ImportError:
-        print("requests not installed. Install with: pip install 'apocrypha[scrape]'")
+        print("requests not installed. Install with: pip install 'esoterica[scrape]'")
         return []
 
     sources = load_sources()
@@ -220,7 +223,7 @@ def scrape_4chan(limit_per_board: int = 20, verbose: bool = False) -> list[dict]
 
     articles: list[dict] = []
     session = requests.Session()
-    session.headers.update({"User-Agent": "apocrypha/0.1 (conspiracy-scraper; research)"})
+    session.headers.update({"User-Agent": "esoterica/1.0 (conspiracy-scraper; research)"})
 
     for board in boards:
         if verbose:
@@ -316,7 +319,7 @@ def scrape_feeds(verbose: bool = False) -> list[dict]:
     try:
         import feedparser
     except ImportError:
-        print("feedparser not installed. Install with: pip install 'apocrypha[scrape]'")
+        print("feedparser not installed. Install with: pip install 'esoterica[scrape]'")
         return []
 
     sources = load_sources()
@@ -330,7 +333,7 @@ def scrape_feeds(verbose: bool = False) -> list[dict]:
         try:
             feed = feedparser.parse(
                 feed_cfg["url"],
-                agent="apocrypha/0.1 (conspiracy-reader)",
+                agent="esoterica/1.0 (conspiracy-reader)",
             )
             count = 0
             for entry in feed.entries:
