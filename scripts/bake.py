@@ -35,8 +35,10 @@ _BASE = f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/(d
 COLLECTIONS: dict[str, str] = {
     "spells": "spell",
     "rituals": "ritual",
+    "magic": "tradition",       # legacy collection name from azrael split
     "traditions": "tradition",
     "grimoires": "grimoire",
+    "herbs": "ingredient",      # legacy collection name from azrael split
     "ingredients": "ingredient",
     "artifacts": "artifact",
     "practitioners": "practitioner",
