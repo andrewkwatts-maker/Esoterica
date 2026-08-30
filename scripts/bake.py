@@ -28,7 +28,7 @@ except ImportError:
 ROOT = Path(__file__).parent.parent
 DATA_OUT = ROOT / "src" / "esoterica" / "_data" / "esoterica.db"
 
-PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", "")
+PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", "eyesofazrael")
 DEFAULT_API_KEY = os.getenv("FIREBASE_API_KEY", "")
 _BASE = f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/(default)/documents"
 
@@ -211,6 +211,15 @@ def _init_db(db_path: Path) -> sqlite3.Connection:
     return db
 
 
+def _stamp_generated_at(db: sqlite3.Connection) -> None:
+    """Record the bake epoch so eyecore's delta sync knows its baseline."""
+    from datetime import datetime, timezone
+
+    from eyecore import set_meta
+
+    set_meta(db, "generated_at", datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+
+
 def _insert_batch(db: sqlite3.Connection, rows: list, fts_rows: list) -> None:
     db.executemany(
         "INSERT OR REPLACE INTO entities"
@@ -247,7 +256,7 @@ def _build_topic_graph(db: sqlite3.Connection, all_rows: list[dict]) -> None:
             id=topic_id,
             name=display,
             type="category",
-            description=f"Conspiracy category: {display}",
+            description=f"Magic category: {display}",
         )
 
     # Collect unique tags as child topics and build entity_topic links
@@ -325,6 +334,7 @@ def bake_from_firebase(db_path: Path, api_key: str) -> None:
         total += len(rows)
     print(f"\nBuilding topic graph...")
     _build_topic_graph(db, all_entities)
+    _stamp_generated_at(db)
     size = db_path.stat().st_size / 1_048_576
     print(f"\nDone: {total} entities -> {db_path} ({size:.1f} MB)")
     db.close()
@@ -368,6 +378,7 @@ def bake_from_local(source_dir: Path, db_path: Path) -> None:
         total += len(rows)
     print(f"\nBuilding topic graph...")
     _build_topic_graph(db, all_entities)
+    _stamp_generated_at(db)
     size = db_path.stat().st_size / 1_048_576
     print(f"\nDone: {total} entities -> {db_path} ({size:.1f} MB)")
     db.close()
@@ -376,7 +387,7 @@ def bake_from_local(source_dir: Path, db_path: Path) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Bake conspiracy data into apocrypha.db")
+    parser = argparse.ArgumentParser(description="Bake magic-systems data into esoterica.db")
     parser.add_argument("--source", metavar="DIR", help="Local JSON export directory (skips Firebase)")
     parser.add_argument("--api-key", default=os.getenv("FIREBASE_API_KEY", DEFAULT_API_KEY),
                         metavar="KEY", help="Firebase public API key")

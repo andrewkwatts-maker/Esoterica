@@ -15,3 +15,8 @@ venv/
 serviceAccountKey.json
 credentials*.json
 *-credentials.json
+
+# Baked data ships as a GitHub Release asset, not in git
+src/esoterica/_data/*.db.gz
+src/esoterica/_data/*.db
+

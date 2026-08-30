@@ -42,6 +42,7 @@ except ImportError:
 from ._query import (
     Get,
     Search,
+    Refresh,
     ByTradition,
     ByCategory,
     ByMythology,
@@ -118,7 +119,7 @@ def GetPractitioner(query: str) -> dict | None:
     return _typed(query, "practitioner")
 
 
-__version__ = "1.0.1"
+__version__ = "1.1.0"
 
 __all__ = [
     # Core query
@@ -131,6 +132,7 @@ __all__ = [
     "GetArtifact",
     "GetPractitioner",
     "Search",
+    "Refresh",
     "ByTradition",
     "ByCategory",
     "ByMythology",

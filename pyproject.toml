@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "esoterica"
-version = "1.0.1"
+version = "1.1.0"
 description = "Magic systems, spells, rituals, arcane traditions, and esoteric knowledge"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -27,7 +27,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "eyecore>=1.0.0",
+    "eyecore>=1.1.0",
 ]
 
 [project.optional-dependencies]
@@ -54,6 +54,7 @@ Issues = "https://github.com/andrewkwatts-maker/Esoterica/issues"
 python-source = "src"
 module-name = "esoterica._core"
 features = ["pyo3/extension-module"]
+exclude = ["src/esoterica/_data/*.db.gz", "src/esoterica/_data/*.db"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

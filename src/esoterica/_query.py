@@ -9,7 +9,46 @@ from eyecore import BaseDB, TopicGraph, CorpusManager
 
 _DATA_DIR = Path(__file__).parent / "_data"
 
-_BASE = BaseDB("esoterica", gz_path=_DATA_DIR / "esoterica.db.gz")
+# Baked snapshot hosted as a GitHub Release asset, downloaded lazily on first
+# query. Firestore serves only the diff layer on top (see Refresh()).
+_DATA_URL = (
+    "https://github.com/andrewkwatts-maker/Esoterica/releases/download/"
+    "data-v1.1.0/esoterica.db.gz"
+)
+
+# Firestore collections this package mirrors (must match scripts/bake.py).
+MAGIC_COLLECTIONS = [
+    "spells", "rituals", "magic", "traditions", "grimoires", "herbs",
+    "ingredients", "artifacts", "practitioners",
+]
+
+_COLLECTION_TYPES = {
+    "spells": "spell", "rituals": "ritual", "magic": "tradition",
+    "traditions": "tradition", "grimoires": "grimoire", "herbs": "ingredient",
+    "ingredients": "ingredient", "artifacts": "artifact",
+    "practitioners": "practitioner",
+}
+
+_BASE = BaseDB("esoterica", gz_path=_DATA_DIR / "esoterica.db.gz", remote_url=_DATA_URL)
+
+
+def Refresh(api_key: str = "") -> int:
+    """Pull entities changed in Firestore since the bake (or last Refresh)
+    and merge them into the local database. Returns entities applied."""
+    from datetime import datetime, timezone
+
+    from eyecore import apply_deltas, fetch_deltas, get_meta
+
+    conn = _BASE.conn
+    since = get_meta(conn, "last_sync") or get_meta(conn, "generated_at")
+    if not since:
+        raise RuntimeError(
+            "This database predates delta support — re-bake with the current "
+            "scripts/bake.py (writes meta.generated_at)."
+        )
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    docs = fetch_deltas("eyesofazrael", MAGIC_COLLECTIONS, since, api_key)
+    return apply_deltas(conn, docs, _COLLECTION_TYPES, now)
 
 _GRAPH: TopicGraph | None = None
 _CORPUS: CorpusManager | None = None

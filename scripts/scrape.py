@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Apocrypha conspiracy scraper CLI.
+"""Esoterica occult/magic scraper CLI.
 
 Usage:
     python scripts/scrape.py run [--llm]            # scrape all sources, optionally LLM-categorize
@@ -25,8 +25,8 @@ sys.path.insert(0, str(ROOT / "src"))
 
 
 def cmd_run(args) -> None:
-    from apocrypha._scraper import scrape_all
-    from apocrypha._store import today_db, insert_articles
+    from esoterica._scraper import scrape_all
+    from esoterica._store import today_db, insert_articles
 
     print("Scraping all sources...")
     results = scrape_all(verbose=True)
@@ -36,8 +36,8 @@ def cmd_run(args) -> None:
 
     if args.llm:
         print("\nRunning LLM categorization...")
-        from apocrypha._store import open_day
-        from apocrypha._llm_categorizer import categorize_batch
+        from esoterica._store import open_day
+        from esoterica._llm_categorizer import categorize_batch
         import json
 
         db = open_day(date.today().isoformat())
@@ -70,8 +70,8 @@ def cmd_run(args) -> None:
 
 
 def cmd_reddit(args) -> None:
-    from apocrypha._scraper import scrape_reddit
-    from apocrypha._store import today_db, insert_articles
+    from esoterica._scraper import scrape_reddit
+    from esoterica._store import today_db, insert_articles
 
     print("Scraping Reddit...")
     articles = scrape_reddit(verbose=True)
@@ -82,8 +82,8 @@ def cmd_reddit(args) -> None:
 
 
 def cmd_chan(args) -> None:
-    from apocrypha._scraper import scrape_4chan
-    from apocrypha._store import today_db, insert_articles
+    from esoterica._scraper import scrape_4chan
+    from esoterica._store import today_db, insert_articles
 
     print("Scraping 4chan...")
     articles = scrape_4chan(verbose=True)
@@ -94,8 +94,8 @@ def cmd_chan(args) -> None:
 
 
 def cmd_feeds(args) -> None:
-    from apocrypha._scraper import scrape_feeds
-    from apocrypha._store import today_db, insert_articles
+    from esoterica._scraper import scrape_feeds
+    from esoterica._store import today_db, insert_articles
 
     print("Scraping RSS feeds...")
     articles = scrape_feeds(verbose=True)
@@ -106,14 +106,14 @@ def cmd_feeds(args) -> None:
 
 
 def cmd_add_feed(args) -> None:
-    from apocrypha._scraper import add_feed
+    from esoterica._scraper import add_feed
 
     entry = add_feed(args.url, name=args.name or "", category=args.category)
     print(f"Added feed: {entry['name']} -> {entry['url']} [{entry['category']}]")
 
 
 def cmd_add_sub(args) -> None:
-    from apocrypha._scraper import add_reddit_sub
+    from esoterica._scraper import add_reddit_sub
 
     sub = args.subreddit.lstrip("r/").lstrip("/")
     add_reddit_sub(sub)
@@ -121,7 +121,7 @@ def cmd_add_sub(args) -> None:
 
 
 def cmd_list(args) -> None:
-    from apocrypha._scraper import load_sources
+    from esoterica._scraper import load_sources
 
     sources = load_sources()
 
@@ -143,8 +143,8 @@ def cmd_list(args) -> None:
 
 
 def cmd_report(args) -> None:
-    from apocrypha._store import open_day, available_days
-    from apocrypha._llm_categorizer import generate_daily_report
+    from esoterica._store import open_day, available_days
+    from esoterica._llm_categorizer import generate_daily_report
     import json
 
     target_date = args.date or date.today().isoformat()
@@ -179,7 +179,7 @@ def cmd_report(args) -> None:
 
 
 def cmd_compress(args) -> None:
-    from apocrypha._store import compress_old_days
+    from esoterica._store import compress_old_days
 
     compressed = compress_old_days(keep_uncompressed=args.keep)
     if compressed:
@@ -189,7 +189,7 @@ def cmd_compress(args) -> None:
 
 
 def cmd_days(args) -> None:
-    from apocrypha._store import available_days
+    from esoterica._store import available_days
 
     days = available_days()
     if not days:
