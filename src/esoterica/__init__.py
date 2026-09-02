@@ -95,7 +95,11 @@ def GetRitual(query: str) -> dict | None:
 
 
 def GetTradition(query: str) -> dict | None:
-    """Return a magical tradition or system by name."""
+    """Return a magical tradition or system by name.
+
+    Spans the `tradition` and `magic` types: the baked corpus stores its 106
+    magic systems as `magic`, the spelling their source documents declare.
+    """
     return _typed(query, "tradition")
 
 
@@ -105,8 +109,17 @@ def GetGrimoire(query: str) -> dict | None:
 
 
 def GetIngredient(query: str) -> dict | None:
-    """Return a magical ingredient or component by name."""
+    """Return a magical ingredient or component by name.
+
+    Spans the `ingredient` and `herb` types: the baked corpus stores all 127
+    of its components as `herb`, the spelling their source documents declare.
+    """
     return _typed(query, "ingredient")
+
+
+def GetHerb(query: str) -> dict | None:
+    """Return a magical herb or plant by name."""
+    return _typed(query, "herb")
 
 
 def GetArtifact(query: str) -> dict | None:
@@ -129,6 +142,7 @@ __all__ = [
     "GetTradition",
     "GetGrimoire",
     "GetIngredient",
+    "GetHerb",
     "GetArtifact",
     "GetPractitioner",
     "Search",

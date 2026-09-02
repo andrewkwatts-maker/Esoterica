@@ -32,13 +32,19 @@ PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", "eyesofazrael")
 DEFAULT_API_KEY = os.getenv("FIREBASE_API_KEY", "")
 _BASE = f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/(default)/documents"
 
+# Collection -> entity type. Only the fallback for a document with no `type`
+# of its own, so it must agree with what the documents declare. `herbs` and
+# `magic` are legacy collection names from the azrael split; their documents
+# declare `herb`/`magic`, not `ingredient`/`tradition`, so the old mapping
+# would have split a collection across two types. Keep in step with
+# src/esoterica/_query.py's _COLLECTION_TYPES.
 COLLECTIONS: dict[str, str] = {
     "spells": "spell",
     "rituals": "ritual",
-    "magic": "tradition",       # legacy collection name from azrael split
+    "magic": "magic",           # legacy collection name from azrael split
     "traditions": "tradition",
     "grimoires": "grimoire",
-    "herbs": "ingredient",      # legacy collection name from azrael split
+    "herbs": "herb",            # legacy collection name from azrael split
     "ingredients": "ingredient",
     "artifacts": "artifact",
     "practitioners": "practitioner",

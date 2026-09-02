@@ -16,20 +16,54 @@ _DATA_URL = (
     "data-v1.1.0/esoterica.db.gz"
 )
 
+# SHA-256 of the release asset above, verified before the download is cached.
+_DATA_SHA256 = "2ff185daa39da99345d1f35bf86075f6ae585ea6c14ac0258083796cde084d53"
+
 # Firestore collections this package mirrors (must match scripts/bake.py).
 MAGIC_COLLECTIONS = [
     "spells", "rituals", "magic", "traditions", "grimoires", "herbs",
     "ingredients", "artifacts", "practitioners",
 ]
 
+# Collection -> entity type. This is only the *fallback* for a document that
+# carries no `type` of its own, so it must agree with the type the documents
+# actually declare — otherwise delta-synced rows land under a type nothing
+# queries, sitting invisibly beside their baked siblings.
+#
+# `herbs` and `magic` are legacy collection names from the azrael split and
+# were mapped onto `ingredient`/`tradition`. Every one of the 127 baked herb
+# rows and 106 baked magic rows declares `type: "herb"` / `type: "magic"`, so
+# the documents are authoritative and the mapping was wrong. The public
+# getters below accept both spellings so nothing that worked before breaks.
 _COLLECTION_TYPES = {
-    "spells": "spell", "rituals": "ritual", "magic": "tradition",
-    "traditions": "tradition", "grimoires": "grimoire", "herbs": "ingredient",
+    "spells": "spell", "rituals": "ritual", "magic": "magic",
+    "traditions": "tradition", "grimoires": "grimoire", "herbs": "herb",
     "ingredients": "ingredient", "artifacts": "artifact",
     "practitioners": "practitioner",
 }
 
-_BASE = BaseDB("esoterica", gz_path=_DATA_DIR / "esoterica.db.gz", remote_url=_DATA_URL)
+# Types the baked snapshot uses interchangeably, for the getters that must
+# span both. Left of the colon is what callers ask for.
+_TYPE_ALIASES = {
+    "ingredient": ("ingredient", "herb"),
+    "tradition": ("tradition", "magic"),
+}
+
+
+def _expand_types(*types: str) -> tuple[str, ...]:
+    """Every stored spelling of each requested type, de-duplicated."""
+    out: list[str] = []
+    for t in types:
+        out.extend(_TYPE_ALIASES.get(t, (t,)))
+    return tuple(dict.fromkeys(out))
+
+
+_BASE = BaseDB(
+    "esoterica",
+    gz_path=_DATA_DIR / "esoterica.db.gz",
+    remote_url=_DATA_URL,
+    remote_sha256=_DATA_SHA256,
+)
 
 
 def Refresh(api_key: str = "") -> int:
@@ -88,7 +122,14 @@ def Get(name: str) -> dict | None:
     return _row_data(row)
 
 
+def _type_clause(entity_type: str) -> tuple[str, tuple[str, ...]]:
+    """SQL predicate + bind params matching every stored spelling of a type."""
+    types = _expand_types(entity_type)
+    return f"type IN ({','.join('?' * len(types))})", types
+
+
 def _typed(query: str, *types: str) -> dict | None:
+    types = _expand_types(*types)
     ph = ",".join("?" * len(types))
     row = _BASE.fetchone(
         f"SELECT data FROM entities WHERE lower(name) = lower(?) AND type IN ({ph})",
@@ -142,15 +183,16 @@ ByMythology = ByTradition
 
 
 def ByType(entity_type: str, mythology: str | None = None, limit: int = 500) -> list[dict]:
+    clause, types = _type_clause(entity_type)
     if mythology:
         rows = _BASE.fetchall(
-            "SELECT data FROM entities WHERE type = ? AND lower(mythology) = lower(?) LIMIT ?",
-            (entity_type, mythology, limit),
+            f"SELECT data FROM entities WHERE {clause} AND lower(mythology) = lower(?) LIMIT ?",
+            (*types, mythology, limit),
         )
     else:
         rows = _BASE.fetchall(
-            "SELECT data FROM entities WHERE type = ? LIMIT ?",
-            (entity_type, limit),
+            f"SELECT data FROM entities WHERE {clause} LIMIT ?",
+            (*types, limit),
         )
     return _rows_data(rows)
 
@@ -169,22 +211,25 @@ def AllTraditions(limit: int = 500) -> list[dict]:
 
 def Count(entity_type: str | None = None) -> int:
     if entity_type:
+        clause, types = _type_clause(entity_type)
         return _BASE.fetchone(
-            "SELECT COUNT(*) FROM entities WHERE type = ?", (entity_type,)
+            f"SELECT COUNT(*) FROM entities WHERE {clause}", types
         )[0]
     return _BASE.fetchone("SELECT COUNT(*) FROM entities")[0]
 
 
 def GetRandom(entity_type: str | None = None, mythology: str | None = None) -> dict | None:
+    clause, types = _type_clause(entity_type) if entity_type else ("", ())
     if entity_type and mythology:
         row = _BASE.fetchone(
-            "SELECT data FROM entities WHERE type=? AND lower(mythology)=lower(?) ORDER BY RANDOM() LIMIT 1",
-            (entity_type, mythology),
+            f"SELECT data FROM entities WHERE {clause} AND lower(mythology)=lower(?) "
+            "ORDER BY RANDOM() LIMIT 1",
+            (*types, mythology),
         )
     elif entity_type:
         row = _BASE.fetchone(
-            "SELECT data FROM entities WHERE type=? ORDER BY RANDOM() LIMIT 1",
-            (entity_type,),
+            f"SELECT data FROM entities WHERE {clause} ORDER BY RANDOM() LIMIT 1",
+            types,
         )
     elif mythology:
         row = _BASE.fetchone(
@@ -230,13 +275,14 @@ def GetMost(field: str = "mythology", limit: int = 10) -> list[dict]:
 
 
 def GetAll(entity_type: str | None = None, mythology: str | None = None) -> list[dict]:
+    clause, types = _type_clause(entity_type) if entity_type else ("", ())
     if entity_type and mythology:
         rows = _BASE.fetchall(
-            "SELECT data FROM entities WHERE type=? AND lower(mythology)=lower(?)",
-            (entity_type, mythology),
+            f"SELECT data FROM entities WHERE {clause} AND lower(mythology)=lower(?)",
+            (*types, mythology),
         )
     elif entity_type:
-        rows = _BASE.fetchall("SELECT data FROM entities WHERE type=?", (entity_type,))
+        rows = _BASE.fetchall(f"SELECT data FROM entities WHERE {clause}", types)
     elif mythology:
         rows = _BASE.fetchall(
             "SELECT data FROM entities WHERE lower(mythology)=lower(?)", (mythology,)

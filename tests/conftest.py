@@ -100,6 +100,24 @@ KEY_OF_SOLOMON = {
 
 ALL_ENTITIES = [HERMETICISM, FIREBALL, LBRP, CROWLEY, KEY_OF_SOLOMON]
 
+# The baked corpus types its components `herb` and its magic systems `magic`,
+# not `ingredient`/`tradition`. Kept out of ALL_ENTITIES so the existing count
+# assertions keep describing the same database.
+MANDRAKE = {
+    "id": "mandrake",
+    "name": "Mandrake",
+    "type": "herb",
+    "mythology": "folk-magic",
+    "domains": "root protection fertility",
+}
+HOODOO = {
+    "id": "hoodoo",
+    "name": "Hoodoo Rootwork",
+    "type": "magic",
+    "mythology": "folk-magic",
+    "domains": "conjure rootwork ancestors",
+}
+
 
 # ---------------------------------------------------------------------------
 # DB builder
@@ -150,11 +168,28 @@ def db():
 
 
 @pytest.fixture
-def patch_base(db):
-    """Patch esoterica._query._BASE so all queries run against the in-memory test DB."""
+def legacy_type_db():
+    """ALL_ENTITIES plus the legacy `herb` / `magic` typings from the bake."""
+    return make_test_db(ALL_ENTITIES + [MANDRAKE, HOODOO])
+
+
+def _install_base(db):
+    """Point esoterica._query._BASE at *db*; restore on teardown."""
     with patch("esoterica._query._BASE") as mock_base:
         mock_base.conn = db
         mock_base.fetchone.side_effect = lambda sql, params=(): db.execute(sql, params).fetchone()
         mock_base.fetchall.side_effect = lambda sql, params=(): db.execute(sql, params).fetchall()
         mock_base.execute.side_effect = lambda sql, params=(): db.execute(sql, params)
         yield mock_base
+
+
+@pytest.fixture
+def patch_base(db):
+    """Patch esoterica._query._BASE so all queries run against the in-memory test DB."""
+    yield from _install_base(db)
+
+
+@pytest.fixture
+def patch_legacy_base(legacy_type_db):
+    """As patch_base, against the DB carrying the legacy `herb`/`magic` types."""
+    yield from _install_base(legacy_type_db)
