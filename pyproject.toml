@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "esoterica"
-version = "1.1.0"
+version = "1.2.0"
 description = "Magic systems, spells, rituals, arcane traditions, and esoteric knowledge"
 readme = "README.md"
 requires-python = ">=3.10"
