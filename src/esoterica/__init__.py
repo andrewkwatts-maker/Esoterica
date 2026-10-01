@@ -1,5 +1,5 @@
 """
-esoterica — Magic systems, spells, rituals, arcane traditions, and esoteric knowledge.
+esoterica -- Magic systems, spells, rituals, arcane traditions, and esoteric knowledge.
 
 Quick start:
     import esoterica
@@ -10,34 +10,52 @@ Quick start:
     spells    = esoterica.ByTradition("ceremonial-magic")
     esoterica.FetchCorpus("gutenberg-key-of-solomon")
     hits      = esoterica.SearchCorpus("circle of protection")
+
+Backend
+-------
+The text normalisation and relevance ranking are implemented in the Rust crate
+``apocrypha_core`` and reach Python through the compiled extension
+``esoterica._core``. There is no Python re-implementation to fall back to: if
+the extension is missing, the accelerated symbols raise
+:class:`RustBackendUnavailable` naming the reason, and the SQLite-backed
+lookups that do not need it keep working.
+
+Call :func:`assert_rust_backend` at startup to fail fast when the accelerated
+path is required, or :func:`backend_report` to see what is actually loaded --
+including whether a stale extension from an earlier build is shadowing the
+current one.
+
+What is Rust and what is not
+----------------------------
+Rust owns the loop-heavy work: HTML-to-plaintext normalisation
+(:func:`strip_html`, :func:`strip_html_batch`) and entity scoring and ranking
+(:func:`score_entity`, :func:`tags_match`, :func:`is_subsequence`,
+:func:`rank_entities`). SQL, HTTP, feed parsing, configuration and
+orchestration stay in Python, where the time goes to the network and to SQLite
+rather than to the interpreter.
 """
 from __future__ import annotations
 
-try:
-    from ._core import score_entity, tags_match
-    _RUST_CORE = True
-except ImportError:
-    _RUST_CORE = False
+from ._backend import (
+    HAS_RUST,
+    RustBackendUnavailable,
+    assert_rust_backend,
+    backend_report,
+    is_rust_backend,
+    is_subsequence,
+    rank_entities,
+    score_entity,
+    strip_html,
+    strip_html_batch,
+    tags_match,
+    version_rust,
+)
 
-    def score_entity(name: str, description: str, search_text: str, query: str) -> float:
-        q = query.lower()
-        n = name.lower()
-        if not q:
-            return 0.0
-        score = 0.0
-        if n.startswith(q):
-            score += 1000.0
-        elif q in n:
-            score += 500.0
-        if q in description.lower():
-            score += 150.0
-        if q in search_text.lower():
-            score += 120.0
-        return score
-
-    def tags_match(tags: list, query: str) -> bool:
-        q = query.lower()
-        return any(t.lower().startswith(q) or q in t.lower() for t in tags)
+#: Historical spelling of :data:`HAS_RUST`, kept because it was exported in
+#: ``__all__`` from the first release. It no longer selects between two
+#: implementations -- there is only one -- but it still answers "is the
+#: extension loaded".
+_RUST_CORE = HAS_RUST
 
 from ._query import (
     Get,
@@ -132,7 +150,7 @@ def GetPractitioner(query: str) -> dict | None:
     return _typed(query, "practitioner")
 
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 __all__ = [
     # Core query
@@ -178,5 +196,18 @@ __all__ = [
     "DataDir",
     "Categorize",
     "DailyReport",
+    # Rust backend
+    "HAS_RUST",
     "_RUST_CORE",
+    "RustBackendUnavailable",
+    "assert_rust_backend",
+    "backend_report",
+    "is_rust_backend",
+    "version_rust",
+    "score_entity",
+    "tags_match",
+    "is_subsequence",
+    "rank_entities",
+    "strip_html",
+    "strip_html_batch",
 ]

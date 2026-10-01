@@ -7,6 +7,8 @@ from pathlib import Path
 
 from eyecore import BaseDB, TopicGraph, CorpusManager
 
+from ._backend import rank_entities
+
 _DATA_DIR = Path(__file__).parent / "_data"
 
 # Baked snapshot hosted as a GitHub Release asset, downloaded lazily on first
@@ -27,7 +29,7 @@ MAGIC_COLLECTIONS = [
 
 # Collection -> entity type. This is only the *fallback* for a document that
 # carries no `type` of its own, so it must agree with the type the documents
-# actually declare — otherwise delta-synced rows land under a type nothing
+# actually declare -- otherwise delta-synced rows land under a type nothing
 # queries, sitting invisibly beside their baked siblings.
 #
 # `herbs` and `magic` are legacy collection names from the azrael split and
@@ -77,7 +79,7 @@ def Refresh(api_key: str = "") -> int:
     since = get_meta(conn, "last_sync") or get_meta(conn, "generated_at")
     if not since:
         raise RuntimeError(
-            "This database predates delta support — re-bake with the current "
+            "This database predates delta support -- re-bake with the current "
             "scripts/bake.py (writes meta.generated_at)."
         )
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
@@ -108,6 +110,49 @@ def _row_data(row) -> dict | None:
 
 def _rows_data(rows) -> list[dict]:
     return [json.loads(r["data"]) for r in rows]
+
+
+# How wide a candidate pool to score for a request of `limit` results.
+# Re-ranking only earns its keep if it can see rows the database's own
+# ordering would have cut off, so the pool is deliberately wider than the
+# answer -- but capped, because the caller asked for a page and not a scan.
+_RANK_POOL_FACTOR = 5
+_RANK_POOL_CAP = 500
+
+# Columns `_reranked` needs. `domains_text` stands in for the description:
+# the entities table has no description column, and domains_text is the per-row
+# prose blob the bake writes from domains, abilities, powers and tags.
+_RANK_COLUMNS = "e.name, e.domains_text, e.search_text, e.data"
+
+
+def _rank_pool(limit: int) -> int:
+    """Candidate count to fetch when `limit` results are wanted."""
+    if limit <= 0:
+        return limit
+    return max(limit, min(limit * _RANK_POOL_FACTOR, _RANK_POOL_CAP))
+
+
+def _reranked(rows, query: str, limit: int) -> list[dict]:
+    """Order `rows` by the Rust relevance model and cut to `limit`.
+
+    Rows the scorer gives zero are appended in their original order rather
+    than dropped. The FTS tokenizer folds diacritics and matches whole tokens,
+    so it legitimately finds rows that a substring scorer cannot; discarding
+    those would be a silent regression against the SQL-only behaviour this
+    replaces. Ranking may only reorder, never lose.
+    """
+    if not rows or not query or limit <= 0:
+        # A non-positive limit keeps SQL's own semantics, where a negative
+        # LIMIT means "no limit" -- re-ranking must not quietly redefine that.
+        return _rows_data(rows)
+    triples = [
+        (r["name"] or "", r["domains_text"] or "", r["search_text"] or "")
+        for r in rows
+    ]
+    order = [index for index, _score in rank_entities(triples, query, limit)]
+    scored = set(order)
+    order.extend(index for index in range(len(rows)) if index not in scored)
+    return [json.loads(rows[index]["data"]) for index in order[:limit]]
 
 
 def Get(name: str) -> dict | None:
@@ -151,23 +196,35 @@ def _typed(query: str, *types: str) -> dict | None:
 
 
 def Search(query: str, limit: int = 20) -> list[dict]:
+    """Full-text search, re-ranked by the Rust relevance model.
+
+    SQLite finds the candidates; `rank_entities` decides the order. bm25 over
+    `search_text` cannot tell a name from a tag, so an exact-name hit used to
+    land below an entity that merely mentioned the word. The scorer weights a
+    name prefix at 1000 against a search-text mention at 120, which is the
+    ordering a name lookup wants.
+    """
+    pool = _rank_pool(limit)
     try:
         rows = _BASE.fetchall(
-            """SELECT e.data FROM entities e
+            f"""SELECT {_RANK_COLUMNS} FROM entities e
                INNER JOIN (
                    SELECT id, rank FROM entities_fts WHERE entities_fts MATCH ?
                    ORDER BY rank
                ) fts ON e.id = fts.id
                LIMIT ?""",
-            (query, limit),
+            (query, pool),
         )
-        return _rows_data(rows)
     except sqlite3.OperationalError:
+        # No FTS5 index in this database (an old bake, or a build of SQLite
+        # without the extension). LIKE finds the same rows unordered, which
+        # makes re-ranking matter more here, not less.
         rows = _BASE.fetchall(
-            "SELECT data FROM entities WHERE lower(search_text) LIKE lower(?) LIMIT ?",
-            (f"%{query}%", limit),
+            "SELECT name, domains_text, search_text, data FROM entities "
+            "WHERE lower(search_text) LIKE lower(?) LIMIT ?",
+            (f"%{query}%", pool),
         )
-        return _rows_data(rows)
+    return _reranked(rows, query, limit)
 
 
 def ByTradition(mythology: str, limit: int = 500) -> list[dict]:
@@ -242,25 +299,31 @@ def GetRandom(entity_type: str | None = None, mythology: str | None = None) -> d
 
 
 def GetFuzzy(query: str, limit: int = 5) -> list[dict]:
+    """Prefix search over names, re-ranked by the Rust relevance model."""
+    pool = _rank_pool(limit)
+    rows = []
     try:
         rows = _BASE.fetchall(
-            """SELECT e.data FROM entities e
+            f"""SELECT {_RANK_COLUMNS} FROM entities e
                INNER JOIN (
                    SELECT id, rank FROM entities_fts WHERE name MATCH ?
                    ORDER BY rank
                ) fts ON e.id = fts.id
                LIMIT ?""",
-            (query + "*", limit),
+            (query + "*", pool),
         )
-        if rows:
-            return _rows_data(rows)
     except sqlite3.OperationalError:
-        pass
-    rows = _BASE.fetchall(
-        "SELECT data FROM entities WHERE lower(name) LIKE lower(?) LIMIT ?",
-        (f"%{query}%", limit),
-    )
-    return _rows_data(rows)
+        # Named, not blanket: this is the one recoverable condition here, a
+        # database whose FTS table has no `name` column to prefix-match. Any
+        # other error must reach the caller.
+        rows = []
+    if not rows:
+        rows = _BASE.fetchall(
+            "SELECT name, domains_text, search_text, data FROM entities "
+            "WHERE lower(name) LIKE lower(?) LIMIT ?",
+            (f"%{query}%", pool),
+        )
+    return _reranked(rows, query, limit)
 
 
 def GetMost(field: str = "mythology", limit: int = 10) -> list[dict]:

@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "esoterica"
-version = "1.1.0"
+version = "1.2.0"
 description = "Magic systems, spells, rituals, arcane traditions, and esoteric knowledge"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -51,9 +51,15 @@ Repository = "https://github.com/andrewkwatts-maker/Esoterica"
 Issues = "https://github.com/andrewkwatts-maker/Esoterica/issues"
 
 [tool.maturin]
+# The workspace root manifest is virtual (it declares members, not a package),
+# so the crate has to be named explicitly or maturin has nothing to build.
+manifest-path = "rust/apocrypha_core/Cargo.toml"
 python-source = "src"
 module-name = "esoterica._core"
-features = ["pyo3/extension-module"]
+# `extension-module` implies `python` and additionally stops PyO3 linking
+# libpython, which a wheel needs and a test binary cannot survive. Only the
+# wheel build sets it; `cargo test --features python` links and runs normally.
+features = ["extension-module"]
 exclude = ["src/esoterica/_data/*.db.gz", "src/esoterica/_data/*.db"]
 
 [tool.pytest.ini_options]

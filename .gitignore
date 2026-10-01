@@ -5,6 +5,14 @@ build/
 dist/
 target/
 Cargo.lock
+
+# Compiled extension built in place by `maturin develop` / `maturin build`.
+# It is a build output, and a stale one committed here is exactly what the
+# version handshake in src/esoterica/_backend.py exists to catch.
+*.pyd
+*.so
+*.dylib
+*.pdb
 .venv/
 venv/
 

@@ -1,0 +1,32 @@
+[package]
+name = "apocrypha_core"
+version = "1.2.0"
+edition = "2021"
+description = "Apocrypha/esoterica core -- HTML text normalisation and entity ranking"
+license = "MIT"
+repository = "https://github.com/andrewkwatts-maker/Esoterica"
+
+# `lib` alongside `cdylib` so `cargo test` can link the crate as a library.
+# With `cdylib` alone the integration tests in `tests/` cannot `use` it at all.
+[lib]
+name = "apocrypha_core"
+crate-type = ["cdylib", "lib"]
+
+[features]
+default = []
+# `python` enables the PyO3 bindings and still links libpython, so a test
+# binary built with it actually runs. `extension-module` additionally tells
+# PyO3 *not* to link libpython, which is required to build a wheel but makes
+# any test binary unloadable.
+#
+# Keeping these as one feature is why `cargo test --features python` is absent
+# from most PyO3 projects' CI: it cannot link, so every `#[cfg(test)]` test
+# inside the facade is written and then never executed anywhere. Only the
+# wheel build (see `[tool.maturin] features` in pyproject.toml) turns
+# `extension-module` on.
+python = ["dep:pyo3"]
+extension-module = ["python", "pyo3/extension-module"]
+
+[dependencies]
+thiserror = "1.0"
+pyo3 = { version = "0.22", optional = true }

@@ -11,7 +11,35 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  # Rust is the implementation, so it is gated first: formatting, lints as
+  # errors, the crate's own tests, and -- separately -- the bindings' tests.
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Format
+        run: cargo fmt --all --check
+      - name: Lint
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Test (no Python)
+        run: cargo test --workspace
+      # `extension-module` is a feature of its own precisely so this can run:
+      # it links libpython, which `extension-module` refuses to do, and
+      # without it every #[cfg(test)] test under pyfacade/ would be written
+      # and then executed nowhere.
+      - name: Test (PyO3 bindings)
+        run: cargo test --workspace --features python
+        env:
+          LD_LIBRARY_PATH: ${{ env.pythonLocation }}/lib
+
   test:
+    needs: rust
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

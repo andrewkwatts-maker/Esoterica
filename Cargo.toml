@@ -1,11 +1,38 @@
-[package]
-name = "esoterica-core"
-version = "1.1.0"
-edition = "2021"
+# Workspace root for the Apocrypha Rust stack.
+#
+#   apocrypha_core   pure-Rust text and ranking core (no pyo3 in the default
+#                    build) + an additive `python` feature holding the PyO3
+#                    facade that the `esoterica` wheel exposes as
+#                    `esoterica._core`.
+#
+# Rust is the implementation; the Python package is the wrapper. The crate
+# builds, tests and benchmarks with no Python interpreter on the path.
 
-[lib]
-name = "_core"
-crate-type = ["cdylib"]
+[workspace]
+resolver = "2"
+members = ["rust/apocrypha_core"]
+# `dist/` holds packaged wheels and sdists of earlier releases, some of which
+# carry their own manifests. Never let a glob pick them up.
+exclude = ["dist", "target"]
 
-[dependencies]
-pyo3 = { version = "0.28", features = ["extension-module"] }
+# Cargo only honours profile tables at the workspace root; member-level
+# [profile.*] sections are ignored with a warning.
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+
+# A full cross-crate LTO relink per `cargo bench` is slow and buys little for
+# a crate this small. Thin LTO keeps the inlining that matters.
+[profile.bench]
+inherits = "release"
+lto = "thin"
+
+# The parity tests run the scorer over thousands of synthetic candidates; an
+# unoptimised debug build makes them needlessly slow. Debug assertions and
+# overflow checks stay on, which is the point of testing in this profile.
+[profile.test]
+opt-level = 1
+
+[profile.test.package."*"]
+opt-level = 3

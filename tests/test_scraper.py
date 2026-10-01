@@ -1,8 +1,13 @@
-"""Unit tests for esoterica._scraper — network-free, import-free variants."""
+"""Unit tests for esoterica._scraper -- network-free, import-free variants."""
 import sys
 from unittest.mock import patch, MagicMock
 
+import pytest
+
 from esoterica._scraper import (
+    ScrapeWarning,
+    _strip_html,
+    _strip_html_many,
     load_sources,
     scrape_4chan,
     scrape_feeds,
@@ -14,7 +19,7 @@ from esoterica._scraper import (
 
 
 # ---------------------------------------------------------------------------
-# load_sources — default behaviour (no sources.json on disk)
+# load_sources -- default behaviour (no sources.json on disk)
 # ---------------------------------------------------------------------------
 
 def test_load_sources_default():
@@ -77,7 +82,7 @@ def test_load_sources_from_file():
 
 
 # ---------------------------------------------------------------------------
-# scrape_4chan — network unavailable
+# scrape_4chan -- network unavailable
 # ---------------------------------------------------------------------------
 
 def test_scrape_4chan_requests_not_installed():
@@ -146,7 +151,7 @@ def test_scrape_4chan_parses_valid_response():
 
 
 # ---------------------------------------------------------------------------
-# scrape_reddit — praw not installed / env vars missing
+# scrape_reddit -- praw not installed / env vars missing
 # ---------------------------------------------------------------------------
 
 def test_scrape_reddit_no_praw():
@@ -175,7 +180,7 @@ def test_scrape_reddit_returns_list():
 
 
 # ---------------------------------------------------------------------------
-# scrape_feeds — feedparser not installed
+# scrape_feeds -- feedparser not installed
 # ---------------------------------------------------------------------------
 
 def test_scrape_feeds_no_feedparser():
@@ -260,3 +265,66 @@ def test_default_feeds_have_required_keys():
         assert "name" in feed
         assert "category" in feed
         assert feed["url"].startswith("http")
+
+
+# ---------------------------------------------------------------------------
+# HTML normalisation: the batch form is the scalar form, and failures are loud
+# ---------------------------------------------------------------------------
+
+def test_the_batch_form_agrees_with_the_scalar_form():
+    """The scrapers call the batch form once per board; it must not differ."""
+    inputs = [
+        "<p>Sigil &amp; seal</p>",
+        "  spaced \n out  ",
+        "",
+        "caf&eacute; noir",
+        "&lt;b&gt; stays literal",
+    ]
+    assert _strip_html_many(inputs) == [_strip_html(text) for text in inputs]
+
+
+def test_an_empty_batch_does_not_cross_the_boundary():
+    assert _strip_html_many([]) == []
+
+
+def test_a_failing_source_warns_instead_of_failing_silently():
+    """A dead board must not look like a board with nothing new.
+
+    Each handler used to be `if verbose: print(...)`, so a source that had
+    been failing for months was invisible unless somebody passed verbose=True.
+    """
+    mock_session = MagicMock()
+    mock_session.get.side_effect = RuntimeError("simulated network error")
+    mock_requests = MagicMock()
+    mock_requests.Session.return_value = mock_session
+
+    with patch.dict(sys.modules, {"requests": mock_requests}),          patch("esoterica._scraper.load_sources") as mock_load:
+        mock_load.return_value = {"chan_boards": ["x"], "reddit_subs": [], "feeds": []}
+        with pytest.warns(ScrapeWarning, match="4chan/x"):
+            result = scrape_4chan()
+
+    assert result == []
+
+
+def test_one_dead_board_does_not_lose_the_others():
+    """The broad `except` is per source, so a healthy board still reports."""
+    good_catalog = [{"threads": [{"no": 7, "sub": "Alive", "com": "", "time": 0}]}]
+    good_response = MagicMock()
+    good_response.raise_for_status.return_value = None
+    good_response.json.return_value = good_catalog
+
+    mock_session = MagicMock()
+    mock_session.get.side_effect = [RuntimeError("dead board"), good_response]
+    mock_requests = MagicMock()
+    mock_requests.Session.return_value = mock_session
+
+    with patch.dict(sys.modules, {"requests": mock_requests}),          patch("esoterica._scraper.load_sources") as mock_load,          patch("esoterica._scraper.time"),          pytest.warns(ScrapeWarning):
+        mock_load.return_value = {
+            "chan_boards": ["dead", "x"],
+            "reddit_subs": [],
+            "feeds": [],
+        }
+        result = scrape_4chan(limit_per_board=5)
+
+    assert [a["title"] for a in result] == ["Alive"]
+    assert result[0]["source"] == "4chan/x"

@@ -2,6 +2,37 @@
 
 ## [Unreleased]
 
+### Changed
+- **The Rust core is now the only implementation.** `apocrypha_core` (new,
+  under `rust/`) owns HTML normalisation and entity scoring/ranking; the
+  duplicate Python copies of `score_entity` and `tags_match` are gone. They
+  had already drifted -- the Rust scorer awarded a subsequence bonus the
+  Python one did not, and which answer you got depended on whether a wheel had
+  been built. A missing extension now raises `RustBackendUnavailable` naming
+  the reason instead of silently answering differently.
+- `Search()` and `GetFuzzy()` re-rank their SQL candidate pool through
+  `rank_entities`, so an exact name match outranks a row that merely mentions
+  the word. Rows the scorer gives zero are kept in their original order rather
+  than dropped: ranking may reorder, never lose.
+- The scraper normalises each board and each feed in one batch call
+  (`strip_html_batch`) instead of one call per field, and every per-source
+  failure is reported through `ScrapeWarning` instead of a `verbose`-gated
+  `print` -- a feed that has been 404ing for months was indistinguishable from
+  a feed with no new posts.
+- `scripts/scrape.py` catches `json.JSONDecodeError`/`TypeError` around the
+  per-row JSON decode rather than a blanket `except Exception`.
+
+### Added
+- `assert_rust_backend()`, `backend_report()` and `HAS_RUST`, with a version
+  handshake across `pyproject.toml`, the crate's `Cargo.toml`, the package and
+  the compiled extension. A stale `_core` left in the tree warns on import and
+  is refused by `assert_rust_backend()`.
+- `tests/test_backend_surface.py` compares the extension's exported surface
+  with the wrapper's re-export list and with `_core.pyi` in both directions,
+  so a binding cannot be compiled into the wheel and left unreachable.
+- CI runs `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test` and
+  `cargo test --features python`.
+
 ### Fixed
 - **`_COLLECTION_TYPES` disagreed with the data it describes.** `herbs` mapped
   to `ingredient` and `magic` to `tradition`, but all 127 baked herb rows and

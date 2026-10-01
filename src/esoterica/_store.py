@@ -7,7 +7,7 @@ import sqlite3
 from datetime import date, timedelta
 from pathlib import Path
 
-from eyecore import cache_dir, GRAPH_SCHEMA
+from eyecore import GRAPH_SCHEMA
 
 ARTICLES_SCHEMA = """
 CREATE TABLE IF NOT EXISTS articles (

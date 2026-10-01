@@ -1,17 +1,24 @@
-﻿"""Esoterica live content scraper — Reddit, forums, RSS feeds."""
+"""Esoterica live content scraper: Reddit, forums, RSS feeds.
+
+Fetching stays in Python -- it waits on sockets, and PRAW and feedparser
+already own the protocol details. What is done to the bytes that come back
+is Rust: HTML normalisation runs once per scraped item and used to be three
+`re.sub` passes each.
+"""
 from __future__ import annotations
 
 import hashlib
-import html
 import json
-import re
 import time
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from time import mktime
 from urllib.parse import urlparse
 
 from eyecore import cache_dir
+
+from ._backend import strip_html, strip_html_batch
 
 _SOURCES_FILE = cache_dir("esoterica") / "sources.json"
 
@@ -105,17 +112,56 @@ def _article_id(url: str) -> str:
     return hashlib.sha256(url.encode()).hexdigest()[:16]
 
 
+class ScrapeWarning(UserWarning):
+    """A source failed during a scrape. Emitted instead of being swallowed."""
+
+
+def _report_failure(what: str, exc: BaseException, verbose: bool) -> None:
+    """Surface a per-source failure. Never silent.
+
+    Each of these handlers used to be `if verbose: print(...)`, so a feed that
+    had been 404ing for months was indistinguishable from a feed with no new
+    posts unless somebody happened to pass verbose=True. A warning is
+    filterable by a caller who genuinely does not care; silence was not.
+    """
+    message = f"{what}: {type(exc).__name__}: {exc}"
+    if verbose:
+        print(f"ERROR: {message}")
+    warnings.warn(message, ScrapeWarning, stacklevel=3)
+
+
 def _strip_html(text: str) -> str:
-    """Remove HTML tags and decode HTML entities from a string."""
+    r"""Remove HTML tags, decode character references, and collapse whitespace.
+
+    Delegates to the Rust core, which is a faithful port of the three
+    `re.sub`/`html.unescape` passes this used to run -- including the order
+    (tags first, so `&lt;b&gt;` survives as literal text) and CPython's
+    definition of `\s`, which counts U+001C..U+001F as whitespace where
+    Rust's own `char::is_whitespace` does not.
+
+    Named references outside the crate's table are left verbatim, as are the
+    semicolon-less legacy spellings; see `apocrypha_core::entities`.
+    """
     if not text:
         return ""
-    # Remove HTML tags
-    text = re.sub(r"<[^>]+>", " ", text)
-    # Decode HTML entities
-    text = html.unescape(text)
-    # Collapse whitespace
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
+    return strip_html(text)
+
+
+def _strip_html_many(texts: list[str]) -> list[str]:
+    """Normalise a whole list in one crossing of the FFI boundary.
+
+    Same result as calling :func:`_strip_html` on each element -- the crate's
+    own tests hold the batch and scalar forms equal -- but a scrape of one
+    board or feed pays for one call rather than one per item. An element over
+    ``MAX_TEXT_BYTES`` raises `OverflowError` for the whole batch instead of
+    being silently replaced, so a truncated article cannot hide among the
+    good ones.
+    """
+    if not texts:
+        # The extension accepts an empty batch, but there is no reason to
+        # cross the boundary to be told nothing came back.
+        return []
+    return strip_html_batch(texts)
 
 
 def scrape_reddit(limit_per_sub: int = 25, verbose: bool = False) -> list[dict]:
@@ -204,8 +250,10 @@ def scrape_reddit(limit_per_sub: int = 25, verbose: bool = False) -> list[dict]:
             if verbose:
                 print(f"{count} posts")
         except Exception as exc:
-            if verbose:
-                print(f"ERROR: {exc}")
+            # One unreachable subreddit must not lose the other nine, but the
+            # failure is reported unconditionally: gating it on `verbose` is
+            # how a source that has been dead for months stays invisible.
+            _report_failure(f"reddit/r/{sub}", exc, verbose)
 
     return articles
 
@@ -234,60 +282,69 @@ def scrape_4chan(limit_per_board: int = 20, verbose: bool = False) -> list[dict]
             resp.raise_for_status()
             pages = resp.json()
 
-            count = 0
+            # Two passes. The first selects the threads, bounded by the
+            # caller's limit; the second normalises every subject and comment
+            # in two batch calls instead of three per thread.
+            selected: list[dict] = []
             for page in pages:
-                if count >= limit_per_board:
+                if len(selected) >= limit_per_board:
                     break
                 for thread in page.get("threads", []):
-                    if count >= limit_per_board:
+                    if len(selected) >= limit_per_board:
                         break
-                    thread_no = thread.get("no")
-                    if not thread_no:
+                    if not thread.get("no"):
                         continue
+                    selected.append(thread)
 
-                    raw_sub = thread.get("sub", "")
-                    raw_com = thread.get("com", "")
-                    title = _strip_html(raw_sub) or _strip_html(raw_com)[:100]
-                    if not title:
-                        title = f"Thread #{thread_no}"
+            subjects = _strip_html_many([t.get("sub") or "" for t in selected])
+            comments = _strip_html_many([t.get("com") or "" for t in selected])
 
-                    summary = _strip_html(raw_com)[:500]
-                    thread_url = f"https://boards.4chan.org/{board}/thread/{thread_no}"
-                    published = datetime.fromtimestamp(
-                        thread.get("time", 0), tz=timezone.utc
-                    ).isoformat()
-                    replies = thread.get("replies", 0)
-                    images = thread.get("images", 0)
+            count = 0
+            for thread, subject, comment in zip(
+                selected, subjects, comments, strict=True
+            ):
+                thread_no = thread["no"]
+                title = subject or comment[:100]
+                if not title:
+                    title = f"Thread #{thread_no}"
 
-                    payload = {
-                        "id": _article_id(thread_url),
-                        "url": thread_url,
-                        "title": title,
-                        "source": f"4chan/{board}",
-                        "category": "conspiracy",
-                        "published": published,
-                        "summary": summary,
-                        "content": summary,
-                        "tags": [board],
-                        "thread_no": thread_no,
-                        "replies": replies,
-                        "images": images,
-                        "board": board,
-                    }
+                summary = comment[:500]
+                thread_url = f"https://boards.4chan.org/{board}/thread/{thread_no}"
+                published = datetime.fromtimestamp(
+                    thread.get("time", 0), tz=timezone.utc
+                ).isoformat()
+                replies = thread.get("replies", 0)
+                images = thread.get("images", 0)
 
-                    articles.append({
-                        "id": payload["id"],
-                        "url": thread_url,
-                        "title": title,
-                        "source": f"4chan/{board}",
-                        "category": "conspiracy",
-                        "published": published,
-                        "summary": summary,
-                        "content": summary,
-                        "tags": json.dumps([board]),
-                        "data": json.dumps(payload, ensure_ascii=False),
-                    })
-                    count += 1
+                payload = {
+                    "id": _article_id(thread_url),
+                    "url": thread_url,
+                    "title": title,
+                    "source": f"4chan/{board}",
+                    "category": "conspiracy",
+                    "published": published,
+                    "summary": summary,
+                    "content": summary,
+                    "tags": [board],
+                    "thread_no": thread_no,
+                    "replies": replies,
+                    "images": images,
+                    "board": board,
+                }
+
+                articles.append({
+                    "id": payload["id"],
+                    "url": thread_url,
+                    "title": title,
+                    "source": f"4chan/{board}",
+                    "category": "conspiracy",
+                    "published": published,
+                    "summary": summary,
+                    "content": summary,
+                    "tags": json.dumps([board]),
+                    "data": json.dumps(payload, ensure_ascii=False),
+                })
+                count += 1
 
             if verbose:
                 print(f"{count} threads")
@@ -296,8 +353,7 @@ def scrape_4chan(limit_per_board: int = 20, verbose: bool = False) -> list[dict]
             time.sleep(1)
 
         except Exception as exc:
-            if verbose:
-                print(f"ERROR: {exc}")
+            _report_failure(f"4chan/{board}", exc, verbose)
 
     return articles
 
@@ -309,7 +365,10 @@ def _parse_feed_time(entry) -> str:
             return datetime.fromtimestamp(
                 mktime(entry.published_parsed), tz=timezone.utc
             ).isoformat()
-        except Exception:
+        except (OverflowError, OSError, ValueError, TypeError):
+            # Named, not blanket: these are what a malformed or out-of-range
+            # struct_time raises. Falling back to the raw string is the
+            # deliberate recovery. Anything else is a bug and must propagate.
             pass
     return entry.get("published", "")
 
@@ -335,17 +394,21 @@ def scrape_feeds(verbose: bool = False) -> list[dict]:
                 feed_cfg["url"],
                 agent="esoterica/1.0 (conspiracy-reader)",
             )
-            count = 0
-            for entry in feed.entries:
-                url = entry.get("link") or entry.get("id", "")
-                if not url:
-                    continue
+            # Entries without a link are dropped first so the batch below is
+            # parallel to `usable` by construction.
+            usable = [
+                (entry, entry.get("link") or entry.get("id", ""))
+                for entry in feed.entries
+                if entry.get("link") or entry.get("id", "")
+            ]
+            summaries = _strip_html_many([
+                (entry.get("summary") or entry.get("description") or "").strip()
+                for entry, _url in usable
+            ])
 
+            count = 0
+            for (entry, url), summary in zip(usable, summaries, strict=True):
                 title = entry.get("title", "Untitled").strip()
-                summary = (
-                    entry.get("summary") or entry.get("description") or ""
-                ).strip()
-                summary = _strip_html(summary)
                 if len(summary) > 3000:
                     summary = summary[:3000]
 
@@ -386,8 +449,7 @@ def scrape_feeds(verbose: bool = False) -> list[dict]:
                 print(f"{count} articles")
 
         except Exception as exc:
-            if verbose:
-                print(f"ERROR: {exc}")
+            _report_failure(label, exc, verbose)
 
     return articles
 
