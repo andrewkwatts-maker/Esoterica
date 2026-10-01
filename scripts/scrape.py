@@ -46,7 +46,11 @@ def cmd_run(args) -> None:
         for r in rows:
             try:
                 a = json.loads(r["data"])
-            except Exception:
+            except (json.JSONDecodeError, TypeError):
+                # Named, not blanket: a row written before the `data` column
+                # existed stores NULL or a non-JSON string, and the row itself
+                # is still usable. Any other error is a real fault and must
+                # reach the caller rather than be papered over.
                 a = dict(r)
             articles.append(a)
 
@@ -154,7 +158,7 @@ def cmd_report(args) -> None:
     except FileNotFoundError:
         days = available_days()
         if not days:
-            print(f"No data available. Run: python scripts/scrape.py run")
+            print("No data available. Run: python scripts/scrape.py run")
         else:
             print(f"No data for {target_date}. Available days: {', '.join(days[:5])}")
         sys.exit(1)
@@ -164,7 +168,8 @@ def cmd_report(args) -> None:
     for r in rows:
         try:
             a = json.loads(r["data"])
-        except Exception:
+        except (json.JSONDecodeError, TypeError):
+            # See cmd_run: only a pre-`data` row is recoverable here.
             a = dict(r)
         articles.append(a)
     db.close()
