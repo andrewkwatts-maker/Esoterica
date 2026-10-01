@@ -34,6 +34,12 @@
   `cargo test --features python`.
 
 ### Fixed
+- **CI tested the published package, not this repository.** The install step
+  was `pip install --find-links dist esoterica`, which only *adds* `dist/` to the
+  candidate set; pip stayed free to prefer the identically versioned wheel on
+  PyPI, and did. Every change in this repository since 1.1.0 went unverified —
+  the suite was exercising released code. The built wheel is now installed by
+  path.
 - **`_COLLECTION_TYPES` disagreed with the data it describes.** `herbs` mapped
   to `ingredient` and `magic` to `tradition`, but all 127 baked herb rows and
   all 106 baked magic rows declare `herb` and `magic` — the types come from
@@ -45,6 +51,11 @@
 - `GetIngredient()`/`GetTradition()`, and `ByType`/`Count`/`GetAll`/`GetRandom`
   for those two types, span both spellings, so callers written against the old
   names keep working against the snapshot that is already installed.
+
+### Changed
+- Version bumped to 1.2.0. The working tree had diverged from the published
+  1.1.0 while keeping its version number, so `pip install esoterica==1.1.0` and a
+  build from this checkout produced different code under one version.
 
 ### Added
 - `GetHerb()`, naming the type the corpus actually uses.

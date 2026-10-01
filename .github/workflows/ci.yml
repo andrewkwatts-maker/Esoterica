@@ -51,7 +51,12 @@ jobs:
         run: |
           pip install maturin
           maturin build --out dist
-          pip install --find-links dist esoterica
+      # Install the wheel by path. `--find-links dist esoterica` only *adds* dist to
+      # the candidate set, so pip was free to prefer the identically versioned
+      # wheel on PyPI -- and did, so the tests ran against the published package
+      # rather than this checkout, and every change here went unverified.
+      - name: Install built wheel
+        run: pip install dist/*.whl
       - name: Run tests
         run: pip install pytest && pytest tests/ -q
 
