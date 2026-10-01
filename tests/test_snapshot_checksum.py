@@ -1,7 +1,7 @@
 """The baked snapshot is checksum-verified on download.
 
 `ensure_db` has always accepted a `sha256`, but nothing passed one, so the
-only integrity check on the release asset was the gzip magic number — a
+only integrity check on the release asset was the gzip magic number -- a
 truncated download passes that. These tests pin the digest to the declared
 URL and prove the wiring reaches `ensure_db`, because the failure mode of
 getting this wrong is silent: a corrupt snapshot caches and is trusted forever.

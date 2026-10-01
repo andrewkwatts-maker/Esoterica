@@ -40,7 +40,7 @@ def test_categories_are_lowercase_hyphenated():
 
 
 # ---------------------------------------------------------------------------
-# categorize_article — LLM not available
+# categorize_article -- LLM not available
 # ---------------------------------------------------------------------------
 
 def test_categorize_article_no_llm():
@@ -70,7 +70,7 @@ def test_categorize_article_no_llm_returns_same_object():
 
 
 # ---------------------------------------------------------------------------
-# categorize_article — LLM available
+# categorize_article -- LLM available
 # ---------------------------------------------------------------------------
 
 def test_categorize_article_with_llm_adds_category():

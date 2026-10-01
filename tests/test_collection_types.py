@@ -2,7 +2,7 @@
 
 The map is only the fallback for a Firestore document that carries no `type`
 of its own. When it disagrees with the documents, delta-synced rows land under
-a type nothing queries and sit invisibly beside their baked siblings — which
+a type nothing queries and sit invisibly beside their baked siblings -- which
 is exactly what `herbs -> ingredient` did to all 127 herbs, and
 `magic -> tradition` to all 106 magic systems.
 """
@@ -24,7 +24,7 @@ BAKED_TYPES = {"ritual": 281, "herb": 127, "magic": 106, "collection": 2,
                "druidic-magic": 1}
 
 
-# ── the mapping itself ────────────────────────────────────────────────────────
+# -- the mapping itself --------------------------------------------------------
 
 def test_every_collection_is_mapped():
     assert set(MAGIC_COLLECTIONS) == set(_COLLECTION_TYPES)
@@ -52,7 +52,7 @@ def test_mapped_types_that_the_snapshot_populates_are_reachable():
         assert _COLLECTION_TYPES[collection] in BAKED_TYPES, collection
 
 
-# ── the getters span both spellings ───────────────────────────────────────────
+# -- the getters span both spellings -------------------------------------------
 
 def test_get_ingredient_finds_a_herb(patch_legacy_base):
     result = esoterica.GetIngredient("Mandrake")

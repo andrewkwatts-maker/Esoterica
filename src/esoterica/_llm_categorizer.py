@@ -55,7 +55,7 @@ def generate_daily_report(articles: list[dict], date: str) -> str:
     """Generate a daily esoterica digest from all articles for a given date."""
     llm = LLMClient.get()
     if not llm.is_available():
-        return f"LLM not available — {len(articles)} articles scraped on {date}"
+        return f"LLM not available -- {len(articles)} articles scraped on {date}"
 
     by_category: dict[str, list] = {}
     for a in articles:
@@ -66,7 +66,7 @@ def generate_daily_report(articles: list[dict], date: str) -> str:
         by_category.items(), key=lambda x: len(x[1]), reverse=True
     )[:5]
 
-    report_parts = [f"# Esoterica Digest — {date}\n"]
+    report_parts = [f"# Esoterica Digest -- {date}\n"]
     for cat, items in top_categories:
         section = llm.generate_report(
             items,

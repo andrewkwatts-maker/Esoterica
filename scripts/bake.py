@@ -82,7 +82,7 @@ CREATE INDEX IF NOT EXISTS idx_entity_topics_topic  ON entity_topics(topic_id);
 """
 
 
-# ── Firestore REST helpers ────────────────────────────────────────────────────
+# -- Firestore REST helpers ----------------------------------------------------
 
 def _parse_value(val: dict):
     if "stringValue" in val:
@@ -139,7 +139,7 @@ def _fetch_collection(session: requests.Session, collection: str, api_key: str) 
     return docs
 
 
-# ── DB helpers ────────────────────────────────────────────────────────────────
+# -- DB helpers ----------------------------------------------------------------
 
 def _coerce_type(raw: str | None, fallback: str) -> str:
     if not raw:
@@ -307,7 +307,7 @@ def _build_topic_graph(db: sqlite3.Connection, all_rows: list[dict]) -> None:
     print(f"  Topic graph: {len(categories)} categories, {len(entity_topic_rows)} entity-topic links")
 
 
-# ── Bake functions ────────────────────────────────────────────────────────────
+# -- Bake functions ------------------------------------------------------------
 
 def bake_from_firebase(db_path: Path, api_key: str) -> None:
     session = requests.Session()
